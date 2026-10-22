@@ -232,6 +232,44 @@ html[data-dsh-mobile] [data-dsh-mobile-nav]:active {
   }
 }
 
+/* Model selector: the trigger is capped at 45% of the control row, which
+   truncates "DeepSeek-V4.1-Flash" on a phone. The version tag goes away and the
+   cap moves to 60%, which still fits the row's own compact measuring. */
+html[data-dsh-mobile] [data-conversation-region="composer"] ._7KE1Ra_trigger {
+  max-width: min(360px, 60cqw) !important;
+}
+
+html[data-dsh-mobile] [data-conversation-region="composer"] ._7KE1Ra_triggerLabel [data-tone],
+html[data-dsh-mobile] [data-conversation-region="composer"] [data-slot="conversation.input.model.label"] [data-tone] {
+  display: none !important;
+}
+
+/* Composer tool row: reclaim the few pixels the model name needs so the
+   shipped compact measuring keeps the text instead of collapsing to an icon. */
+html[data-dsh-mobile] [data-conversation-region="composer"] .uV2eYG_row {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  gap: 8px !important;
+}
+
+/* Composer dock statistics: the two pills stay visible (a user on Work details
+   = Detailed expects them); drop their decorative icons, tighten the row and
+   shrink the type a little so the numbers are not ellipsised. */
+html[data-dsh-mobile] [data-composer-seat] .bOPqQW_pill > svg {
+  display: none !important;
+}
+
+html[data-dsh-mobile] [data-composer-seat] .bOPqQW_pill {
+  font-size: 12px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  gap: 0 !important;
+}
+
+html[data-dsh-mobile] [data-composer-seat] .uV2eYG_dock {
+  gap: 6px !important;
+}
+
 /* Reading: phone-sized body copy and code. */
 html[data-dsh-mobile] body {
   --dsh-content-font-size: 16px !important;
@@ -256,9 +294,19 @@ html[data-dsh-mobile] [data-conversation-region="composer"] button {
 /* Touch devices: no hover-only affordances, and comfortable targets. */
 @media (hover: none) {
   html[data-dsh-mobile] [data-slot="sidebar"] button,
-  html[data-dsh-mobile] [data-slot="conversation.header"] button,
-  html[data-dsh-mobile] [data-conversation-region="composer"] button {
+  html[data-dsh-mobile] [data-slot="conversation.header"] button {
     min-height: 36px;
+  }
+
+  /* The composer's round controls keep a square box, otherwise a min-height
+     rule turns them into ovals. */
+  html[data-dsh-mobile] [data-conversation-region="composer"] .uV2eYG_add,
+  html[data-dsh-mobile] [data-conversation-region="composer"] .uV2eYG_primary {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    padding: 0 !important;
   }
 }
 
@@ -388,11 +436,6 @@ html[data-dsh-mobile] ._8HJdBW_themeCube {
   min-width: 0 !important;
 }
 
-/* Composer dock: keep the context meter, drop the two generation
-   statistics pills that crowd a 390px row. */
-html[data-dsh-mobile] [data-composer-seat] .bOPqQW_anchor {
-  display: none;
-}
 `;
 
     /** @returns {boolean} */
@@ -691,6 +734,44 @@ html[data-dsh-mobile] [data-composer-seat] .bOPqQW_anchor {
             bodyObserver.disconnect();
           };
         }, 'dsh-mobile-ui: drawer dismissal');
+
+        // ---- composer focus guard -----------------------------------------
+        // The shipped composer focuses itself on Session switches and on the
+        // first paint. On a phone that pops the soft keyboard without the user
+        // asking for it, so drop focus that no tap preceded.
+        ctx.effect(() => {
+          const root = document.documentElement;
+          let lastComposerPointer = 0;
+
+          const insideComposer = (node) =>
+            node instanceof Element &&
+            node.closest('[data-conversation-region="composer"]') !== null;
+
+          const isEditor = (node) =>
+            node instanceof Element &&
+            (node.isContentEditable || node.tagName === 'TEXTAREA') &&
+            insideComposer(node);
+
+          const markPointer = (event) => {
+            if (insideComposer(event.target)) lastComposerPointer = Date.now();
+          };
+
+          const onFocusIn = (event) => {
+            if (!root.hasAttribute('data-dsh-mobile')) return;
+            if (!isEditor(event.target)) return;
+            if (Date.now() - lastComposerPointer < 900) return;
+            event.target.blur();
+          };
+
+          document.addEventListener('pointerdown', markPointer, true);
+          document.addEventListener('touchstart', markPointer, true);
+          document.addEventListener('focusin', onFocusIn, true);
+          return () => {
+            document.removeEventListener('pointerdown', markPointer, true);
+            document.removeEventListener('touchstart', markPointer, true);
+            document.removeEventListener('focusin', onFocusIn, true);
+          };
+        }, 'dsh-mobile-ui: composer focus guard');
 
         // ---- header navigation seat ---------------------------------------
         ctx.slots.inject('conversation.header.leading', () =>
