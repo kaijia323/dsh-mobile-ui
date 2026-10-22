@@ -602,39 +602,67 @@ html[data-dsh-mobile] [data-composer-seat] .bOPqQW_anchor {
         }, 'dsh-mobile-ui: visible viewport');
 
         // ---- drawer dismissal --------------------------------------------
-        // A tap inside the drawer or on the dimmed conversation closes it, so a
-        // session pick never leaves a 280px panel covering the conversation.
-        // Menu triggers stay open: their popovers render outside the drawer.
+        // The drawer stays open for in-place interactions (search, menus,
+        // workspace dialogs) and closes when a tap lands outside it or when
+        // navigation actually happens: another Session or another main panel.
         ctx.effect(() => {
-          const MENU_TRIGGER = /(actions|menu)$/i;
-          const close = () => {
+          const root = document.documentElement;
+          const isMobile = () => root.hasAttribute('data-dsh-mobile');
+          const closeDrawer = () => {
             if (drawerOpen()) ctx.layout.toggleSidebar();
           };
+
           const onClick = (event) => {
-            if (!document.documentElement.hasAttribute('data-dsh-mobile')) return;
-            if (!drawerOpen()) return;
+            if (!isMobile() || !drawerOpen()) return;
             const target = event.target;
             if (!(target instanceof Element)) return;
             if (target.closest('[data-dsh-mobile-nav], [data-dsh-mobile-panel-nav]')) return;
-            const button = target.closest('button');
-            const label = button ? button.getAttribute('aria-label') || '' : '';
-            if (
-              label === 'View options' ||
-              label === 'Account menu' ||
-              MENU_TRIGGER.test(label)
-            ) {
+            // Picking a Session row is navigation even when it is already open;
+            // workspace rows only expand or collapse and keep the drawer.
+            if (target.closest('[data-slot="sidebar.workspaces"] [data-row-key^="session:"]')) {
+              window.setTimeout(closeDrawer, 0);
               return;
             }
-            window.setTimeout(close, 0);
+            if (target.closest('[data-slot="sidebar"]')) return;
+            window.setTimeout(closeDrawer, 0);
           };
+
           const onKeyDown = (event) => {
-            if (event.key === 'Escape' && drawerOpen()) close();
+            if (event.key === 'Escape' && isMobile()) closeDrawer();
           };
-          document.addEventListener('click', onClick);
+
+          // A Session switch (including the blank New Session state) closes it.
+          const sessionObserver = new MutationObserver(closeDrawer);
+          sessionObserver.observe(document.body, {
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['data-conversation-session'],
+          });
+
+          // A main-panel switch (Plugins, Automation tasks) closes it too.
+          let panelObserver = null;
+          let observedPanel = null;
+          const attachPanelObserver = () => {
+            const slot = document.querySelector('[data-slot="main"]');
+            if (slot === observedPanel) return;
+            if (panelObserver) panelObserver.disconnect();
+            observedPanel = slot;
+            if (!slot) return;
+            panelObserver = new MutationObserver(closeDrawer);
+            panelObserver.observe(slot, { childList: true });
+          };
+          const bodyObserver = new MutationObserver(attachPanelObserver);
+          bodyObserver.observe(document.body, { childList: true });
+          attachPanelObserver();
+
+          document.addEventListener('click', onClick, true);
           document.addEventListener('keydown', onKeyDown);
           return () => {
-            document.removeEventListener('click', onClick);
+            document.removeEventListener('click', onClick, true);
             document.removeEventListener('keydown', onKeyDown);
+            sessionObserver.disconnect();
+            if (panelObserver) panelObserver.disconnect();
+            bodyObserver.disconnect();
           };
         }, 'dsh-mobile-ui: drawer dismissal');
 
