@@ -212,6 +212,26 @@ html[data-dsh-mobile] [data-dsh-mobile-nav]:active {
   background: var(--dsw-alias-bg-layer-2);
 }
 
+/* Touch devices: the shipped session rows reveal their actions only on hover,
+   which never happens on a phone. Keep just the overflow menu visible so
+   rename/archive/pin stay reachable. */
+@media (hover: none) {
+  html[data-dsh-mobile] [data-slot="sidebar.workspaces"] [data-row-key^="session:"] > :has(button) {
+    display: inline-flex !important;
+    padding-left: 2px;
+  }
+
+  /* The relative time is the sibling just before the actions; dropping it keeps
+     the row from reading like a truncated timestamp. */
+  html[data-dsh-mobile] [data-slot="sidebar.workspaces"] [data-row-key^="session:"] > :nth-last-child(2) {
+    display: none !important;
+  }
+
+  html[data-dsh-mobile] [data-slot="sidebar.workspaces"] [data-row-key^="session:"] > :has(button) > :nth-child(n + 2) {
+    display: none !important;
+  }
+}
+
 /* Reading: phone-sized body copy and code. */
 html[data-dsh-mobile] body {
   --dsh-content-font-size: 16px !important;
