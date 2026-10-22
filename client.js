@@ -785,6 +785,7 @@ html[data-dsh-mobile] ._8HJdBW_themeCube {
         ctx.effect(() => {
           const root = document.documentElement;
           let lastComposerPointer = 0;
+          let lastComposerButton = 0;
 
           const insideComposer = (node) =>
             node instanceof Element &&
@@ -797,18 +798,31 @@ html[data-dsh-mobile] ._8HJdBW_themeCube {
 
           const markPointer = (event) => {
             const target = event.target;
-            // Tapping +, the model selector or the permission control must not
-            // authorise the editor focus that follows, or the keyboard pops.
             if (!(target instanceof Element)) return;
-            if (target.closest('button')) return;
+            if (target.closest('button')) {
+              if (insideComposer(target)) lastComposerButton = Date.now();
+              return;
+            }
             if (insideComposer(target)) lastComposerPointer = Date.now();
           };
 
           const onFocusIn = (event) => {
             if (!root.hasAttribute('data-dsh-mobile')) return;
-            if (!isEditor(event.target)) return;
+            const editor = event.target;
+            if (!isEditor(editor)) return;
+            // A tap on the editor itself: the user wants to type.
             if (Date.now() - lastComposerPointer < 900) return;
-            event.target.blur();
+            // Buttons like "+" focus the editor to anchor their popover; the menu
+            // survives a blur, so open it first and drop the focus right after so
+            // the soft keyboard never stays up.
+            if (Date.now() - lastComposerButton < 1200) {
+              window.setTimeout(() => {
+                if (document.activeElement === editor) editor.blur();
+              }, 90);
+              return;
+            }
+            // Focus nobody asked for (session switch, first paint): drop it.
+            editor.blur();
           };
 
           document.addEventListener('pointerdown', markPointer, true);
