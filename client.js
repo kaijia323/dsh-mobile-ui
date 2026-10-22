@@ -11,7 +11,7 @@
  * untouched. `?dsh-mobile=off` disables the layer for one load.
  */
 window.__ModuleLoader__.load({
-  id: '@local/dsh-mobile-ui',
+  id: 'dsh-mobile-ui',
   factory(require) {
     const React = require('react');
     const h = React.createElement;
