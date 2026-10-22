@@ -784,8 +784,10 @@ html[data-dsh-mobile] ._8HJdBW_themeCube {
         // asking for it, so drop focus that no tap preceded.
         ctx.effect(() => {
           const root = document.documentElement;
+          const ADD_MENU = '[class*="_3e4SsG_menu"]';
           let lastComposerPointer = 0;
           let lastComposerButton = 0;
+          let buttonFocusedEditor = false;
 
           const insideComposer = (node) =>
             node instanceof Element &&
@@ -795,6 +797,13 @@ html[data-dsh-mobile] ._8HJdBW_themeCube {
             node instanceof Element &&
             (node.isContentEditable || node.tagName === 'TEXTAREA') &&
             insideComposer(node);
+
+          const blurEditor = () => {
+            const editor = document.querySelector(
+              '[data-conversation-region="composer"] [contenteditable="true"]',
+            );
+            if (editor !== null && document.activeElement === editor) editor.blur();
+          };
 
           const markPointer = (event) => {
             const target = event.target;
@@ -812,26 +821,63 @@ html[data-dsh-mobile] ._8HJdBW_themeCube {
             if (!isEditor(editor)) return;
             // A tap on the editor itself: the user wants to type.
             if (Date.now() - lastComposerPointer < 900) return;
-            // Buttons like "+" focus the editor to anchor their popover; the menu
-            // survives a blur, so open it first and drop the focus right after so
-            // the soft keyboard never stays up.
+            // Buttons like "+" focus the editor only so their popover can mount.
+            // Keep the focus until that click is handled, then drop it in the very
+            // next task: the popover survives, the soft keyboard does not.
             if (Date.now() - lastComposerButton < 1200) {
+              buttonFocusedEditor = true;
               window.setTimeout(() => {
-                if (document.activeElement === editor) editor.blur();
-              }, 90);
+                if (buttonFocusedEditor) {
+                  buttonFocusedEditor = false;
+                  blurEditor();
+                }
+              }, 350);
               return;
             }
             // Focus nobody asked for (session switch, first paint): drop it.
             editor.blur();
           };
 
+          // Runs before React's handlers; the deferred blur still happens after
+          // the click has opened its popover.
+          const onClick = (event) => {
+            if (!root.hasAttribute('data-dsh-mobile') || !buttonFocusedEditor) return;
+            const target = event.target;
+            if (!(target instanceof Element)) return;
+            const button = target.closest('button');
+            if (button === null || !insideComposer(button)) return;
+            buttonFocusedEditor = false;
+            window.setTimeout(blurEditor, 0);
+          };
+
+          // A tap on the editor while the "+" panel is open means "let me type":
+          // close the panel first (its Escape handler lives on the editor).
+          const onEditorPointerDown = (event) => {
+            if (!root.hasAttribute('data-dsh-mobile')) return;
+            const target = event.target;
+            if (!isEditor(target)) return;
+            if (document.querySelector(ADD_MENU) === null) return;
+            target.dispatchEvent(
+              new KeyboardEvent('keydown', {
+                key: 'Escape',
+                code: 'Escape',
+                bubbles: true,
+                cancelable: true,
+              }),
+            );
+          };
+
           document.addEventListener('pointerdown', markPointer, true);
           document.addEventListener('touchstart', markPointer, true);
+          document.addEventListener('pointerdown', onEditorPointerDown, true);
           document.addEventListener('focusin', onFocusIn, true);
+          document.addEventListener('click', onClick, true);
           return () => {
             document.removeEventListener('pointerdown', markPointer, true);
             document.removeEventListener('touchstart', markPointer, true);
+            document.removeEventListener('pointerdown', onEditorPointerDown, true);
             document.removeEventListener('focusin', onFocusIn, true);
+            document.removeEventListener('click', onClick, true);
           };
         }, 'dsh-mobile-ui: composer focus guard');
 
