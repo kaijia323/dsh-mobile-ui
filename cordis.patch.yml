@@ -1,0 +1,5 @@
+# Mobile web shell for the Harness Web GUI.
+# Gated by `html[data-dsh-mobile]`; desktop viewports keep the shipped layout.
+- insert:
+    - id: dsh-mobile-ui
+      name: '@local/dsh-mobile-ui'

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Mobile Web UI",
+    "description": "Mobile shell for the Web GUI: overlay drawer navigation, touch-sized chrome, safe areas and a full-width conversation."
+  }
+}
