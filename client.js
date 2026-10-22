@@ -619,7 +619,10 @@ html[data-dsh-mobile] [data-composer-seat] .bOPqQW_anchor {
             if (target.closest('[data-dsh-mobile-nav], [data-dsh-mobile-panel-nav]')) return;
             // Picking a Session row is navigation even when it is already open;
             // workspace rows only expand or collapse and keep the drawer.
+            // Controls inside the row (the "..." menu, hover actions) are
+            // in-place actions: keep the drawer so their menu stays in context.
             if (target.closest('[data-slot="sidebar.workspaces"] [data-row-key^="session:"]')) {
+              if (target.closest('button')) return;
               window.setTimeout(closeDrawer, 0);
               return;
             }
