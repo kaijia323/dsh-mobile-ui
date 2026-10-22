@@ -22,7 +22,18 @@ DSH Web 的**移动端外壳**插件。桌面浏览器不受影响：所有样�
 
 前提：DSH Web **0.2.1-rc.2**（本插件按该版本构建；其他版本可能静默降级成桌面样式）。
 
-**方式一：GitHub 地址（最简单）**
+**方式一：插件市场（推荐）**
+
+1. 在插件页打开实验性「自定义插件市场」（**插件 → 实验性插件 → 更多**）；
+2. 切到「发现」标签，点「添加索引源」，填：
+
+   ```
+   https://kaijia323.github.io/dsh-mobile-ui/index.json
+   ```
+
+3. 找到「移动端外壳」，点安装。
+
+**方式二：GitHub 地址**
 
 1. 打开 DSH Web → 左侧栏「插件」→ 右上「添加插件」；
 2. 输入 `github:kaijia323/dsh-mobile-ui`；
@@ -31,7 +42,7 @@ DSH Web 的**移动端外壳**插件。桌面浏览器不受影响：所有样�
 > 仓库是公开的，任何人只要有 GitHub 账号就能用这种方式安装。如果之后改成私有，
 > 需要把安装的人加成协作者，或者改用本地目录 / npm 包名。
 
-**方式二：本地目录**
+**方式三：本地目录**
 
 ```sh
 git clone https://github.com/kaijia323/dsh-mobile-ui.git ~/dsh-mobile-ui
@@ -39,7 +50,7 @@ git clone https://github.com/kaijia323/dsh-mobile-ui.git ~/dsh-mobile-ui
 
 然后在「添加插件」里填本地目录路径（例如 `/home/you/dsh-mobile-ui`）。
 
-**方式三：npm 包名**
+**方式四：npm 包名**
 
 发布到 npm 之后，在「添加插件」里直接填包名即可（当前未发布）。
 
