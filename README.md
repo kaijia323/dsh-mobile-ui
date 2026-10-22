@@ -1,5 +1,10 @@
 # dsh-mobile-ui
 
+![license](https://img.shields.io/badge/license-MIT-2f8f5b?style=flat-square)
+![platform](https://img.shields.io/badge/platform-DSH%20Web-4D6BFE?style=flat-square)
+![plugin](https://img.shields.io/badge/type-DSH%20plugin-0F1115?style=flat-square)
+![mobile](https://img.shields.io/badge/mobile-drawer%20%C2%B7%20touch%20%C2%B7%20safe--area-6b7280?style=flat-square)
+
 DSH Web 的**移动端外壳**插件。桌面浏览器不受影响：所有样式和组件都只在
 `html[data-dsh-mobile]`（视口宽度 ≤ 767px）下生效。
 
