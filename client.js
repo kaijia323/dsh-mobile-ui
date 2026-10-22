@@ -107,7 +107,10 @@ html[data-dsh-mobile] #root > [data-slot="root"] > div:not([data-sidebar-collaps
 html[data-dsh-mobile] [data-slot="conversation.header"] > header {
   padding-top: calc(8px + env(safe-area-inset-top)) !important;
   padding-left: 8px !important;
-  padding-right: 8px !important;
+  /* The far-right seat overhangs the content box by 16px on purpose, so the
+     right padding keeps it inside the viewport instead of clipping the
+     right-panel control. */
+  padding-right: 20px !important;
 }
 
 /* The leading seat's drawer button. */
@@ -181,7 +184,10 @@ html[data-dsh-mobile] [data-dsh-mobile-panel-bar] button:active {
 html[data-dsh-mobile] [data-slot="conversation.header"] > header {
   padding-top: calc(8px + env(safe-area-inset-top)) !important;
   padding-left: 8px !important;
-  padding-right: 8px !important;
+  /* The far-right seat overhangs the content box by 16px on purpose, so the
+     right padding keeps it inside the viewport instead of clipping the
+     right-panel control. */
+  padding-right: 20px !important;
 }
 
 /* The leading seat's drawer button. */
@@ -248,6 +254,27 @@ html[data-dsh-mobile] [data-conversation-region="composer"] button {
    build. If an upgrade renames them these rules simply stop
    matching; the rest of the mobile shell keeps working.
    ------------------------------------------------------------ */
+
+/* Conversation header on a phone: the subagent counter keeps its icon but
+   drops the text label, so the right-panel control stays inside the frame. */
+html[data-dsh-mobile] .ZKlsPq_trigger {
+  width: 28px !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  justify-content: center !important;
+}
+
+html[data-dsh-mobile] .ZKlsPq_trigger > span {
+  display: none !important;
+}
+
+html[data-dsh-mobile] .wSkVaW_titleCluster {
+  min-width: 0 !important;
+}
+
+html[data-dsh-mobile] .wSkVaW_crumbs {
+  min-width: 0 !important;
+}
 
 /* Settings dialog: full-screen sheet with the section list as a horizontal
    strip. The shipped two-column dialog leaves the option column 154px wide
