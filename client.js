@@ -216,7 +216,8 @@ html[data-dsh-mobile] [data-dsh-mobile-nav]:active {
    which never happens on a phone. Keep just the overflow menu visible so
    rename/archive/pin stay reachable. */
 @media (hover: none) {
-  html[data-dsh-mobile] [data-slot="sidebar.workspaces"] [data-row-key^="session:"] > :has(button) {
+  html[data-dsh-mobile] [data-slot="sidebar.workspaces"] [data-row-key^="session:"] > :has(button),
+  html[data-dsh-mobile] [data-slot="sidebar.workspaces"] [data-row-key^="workspace:"] > :has(button) {
     display: inline-flex !important;
     padding-left: 2px;
   }
@@ -692,7 +693,20 @@ html[data-dsh-mobile] ._8HJdBW_themeCube {
             // Menu items render in a body portal; acting on one is still an
             // in-place operation, so the list stays where the user left it.
             if (target.closest('[role="menu"]')) return;
-            if (target.closest('[data-slot="sidebar"]')) return;
+            if (target.closest('[data-slot="sidebar"]')) {
+              // Brand/New Session/panel rows collapse the drawer immediately;
+              // only the browse-and-manage regions keep it.
+              const button = target.closest('button');
+              if (
+                button === null ||
+                button.closest(
+                  '[data-slot="sidebar.workspaces"], [data-slot="sidebar.settings"], [data-slot="sidebar.footer.action"]',
+                ) === null
+              ) {
+                window.setTimeout(closeDrawer, 0);
+              }
+              return;
+            }
             window.setTimeout(closeDrawer, 0);
           };
 
@@ -735,6 +749,28 @@ html[data-dsh-mobile] ._8HJdBW_themeCube {
           };
         }, 'dsh-mobile-ui: drawer dismissal');
 
+        // ---- drawer closes on a new Session -------------------------------
+        // Creating a Session swaps the conversation DOM node, so the attribute
+        // observer above sees no mutation. While the drawer is open, watch the
+        // conversation identity directly and close once it changes.
+        ctx.effect(() => {
+          const root = document.documentElement;
+          let lastSession = null;
+          const readSession = () => {
+            const node = document.querySelector('[data-conversation-session]');
+            return node ? node.getAttribute('data-conversation-session') : null;
+          };
+          const timer = window.setInterval(() => {
+            const current = readSession();
+            const mobile = root.hasAttribute('data-dsh-mobile');
+            if (mobile && drawerOpen() && current !== lastSession) {
+              ctx.layout.toggleSidebar();
+            }
+            lastSession = current;
+          }, 120);
+          return () => window.clearInterval(timer);
+        }, 'dsh-mobile-ui: new-session drawer close');
+
         // ---- composer focus guard -----------------------------------------
         // The shipped composer focuses itself on Session switches and on the
         // first paint. On a phone that pops the soft keyboard without the user
@@ -753,7 +789,12 @@ html[data-dsh-mobile] ._8HJdBW_themeCube {
             insideComposer(node);
 
           const markPointer = (event) => {
-            if (insideComposer(event.target)) lastComposerPointer = Date.now();
+            const target = event.target;
+            // Tapping +, the model selector or the permission control must not
+            // authorise the editor focus that follows, or the keyboard pops.
+            if (!(target instanceof Element)) return;
+            if (target.closest('button')) return;
+            if (insideComposer(target)) lastComposerPointer = Date.now();
           };
 
           const onFocusIn = (event) => {
