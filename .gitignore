@@ -1,13 +1,13 @@
 node_modules/
 .DS_Store
 *.log
-# 验证截图不进仓库（会话内容/路径等隐私信息）
+# 原始截图/录屏不进仓库（会话内容/路径等隐私信息）
 docs/
 *.png
 *.jpg
 *.jpeg
 *.webm
-# 只保留脱敏后的界面预览
+# 只保留脱敏后的预览素材
 !screenshots/
 !screenshots/*.png
-!screenshots/*.webm
+!screenshots/*.gif

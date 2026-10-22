@@ -5,16 +5,11 @@ DSH Web 的**移动端外壳**插件。桌面浏览器不受影响：所有样�
 
 ## 界面预览
 
-演示视频（18 秒、静音、WebM，工作区与会话名均为示例占位）：
-[screenshots/demo.webm](screenshots/demo.webm)
+![移动端界面总览：对话、抽屉导航、命令面板、全局面板、设置](screenshots/preview.png)
 
-移动端截图（演示数据，工作区与会话名使用示例占位）：
+演示（GIF，工作区与会话名均为示例占位）：
 
-| 对话页 | 抽屉导航 |
-| --- | --- |
-| ![对话页](screenshots/mobile-conversation.png) | ![抽屉导航](screenshots/mobile-drawer.png) |
-| **全局面板（底部导航栏）** | **设置面板** |
-| ![全局面板](screenshots/mobile-panel.png) | ![设置面板](screenshots/mobile-settings.png) |
+![移动端操作演示](screenshots/demo.gif)
 
 ## 做了什么
 
