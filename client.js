@@ -646,6 +646,9 @@ html[data-dsh-mobile] [data-composer-seat] .bOPqQW_anchor {
               window.setTimeout(closeDrawer, 0);
               return;
             }
+            // Menu items render in a body portal; acting on one is still an
+            // in-place operation, so the list stays where the user left it.
+            if (target.closest('[role="menu"]')) return;
             if (target.closest('[data-slot="sidebar"]')) return;
             window.setTimeout(closeDrawer, 0);
           };
