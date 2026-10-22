@@ -27,12 +27,12 @@
       },
       "versions": [
         {
-          "version": "0.1.1",
-          "publishTimestamp": 1792663839,
+          "version": "0.1.2",
+          "publishTimestamp": 1792664361,
           "source": {
             "type": "git",
             "url": "https://github.com/kaijia323/dsh-mobile-ui",
-            "commit": "3631c316962686dfb053e1d7f18357439aad4b3c"
+            "commit": "f2182415a86dd824d0dbb6c1b1d906f7d22dcf52"
           }
         }
       ]
