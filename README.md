@@ -3,6 +3,16 @@
 DSH Web 的**移动端外壳**插件。桌面浏览器不受影响：所有样式和组件都只在
 `html[data-dsh-mobile]`（视口宽度 ≤ 767px）下生效。
 
+## 界面预览
+
+移动端（下方截图为演示数据，工作区与会话名使用示例占位）：
+
+| 对话页 | 抽屉导航 |
+| --- | --- |
+| ![对话页](screenshots/mobile-conversation.png) | ![抽屉导航](screenshots/mobile-drawer.png) |
+| **全局面板（底部导航栏）** | **设置面板** |
+| ![全局面板](screenshots/mobile-panel.png) | ![设置面板](screenshots/mobile-settings.png) |
+
 ## 做了什么
 
 - **左侧栏不再占宽**：移动端原本常驻的 56px 图标竖条会吃掉约 14% 屏宽。现在左右两列

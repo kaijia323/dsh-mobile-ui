@@ -6,3 +6,6 @@ docs/
 *.png
 *.jpg
 *.jpeg
+# 只保留脱敏后的界面预览图
+!screenshots/
+!screenshots/*.png
