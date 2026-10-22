@@ -1,0 +1,33 @@
+{
+  "format": 1,
+  "title": { "en": "kaijia323 plugins", "zh": "kaijia323 插件市场" },
+  "description": {
+    "en": "Plugins for DeepSeek Harness by kaijia323.",
+    "zh": "kaijia323 的 DeepSeek Harness 插件。"
+  },
+  "plugins": [
+    {
+      "name": "dsh-mobile-ui",
+      "title": { "en": "Mobile Web UI", "zh": "移动端外壳" },
+      "description": {
+        "en": "Drawer navigation, touch-sized chrome, safe areas and a full-width conversation on phones; desktop stays unchanged.",
+        "zh": "手机上使用抽屉导航、触控尺寸控件、安全区适配和全宽对话区；桌面端保持不变。"
+      },
+      "icon": "icons/dsh-mobile-ui.svg",
+      "author": "kaijia323",
+      "homepage": "https://github.com/kaijia323/dsh-mobile-ui#readme",
+      "repository": { "url": "https://github.com/kaijia323/dsh-mobile-ui" },
+      "versions": [
+        {
+          "version": "0.1.1",
+          "publishTimestamp": 1792663725,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/kaijia323/dsh-mobile-ui",
+            "commit": "b895a9a7e372f8136f02e354e03789608ab96d81"
+          }
+        }
+      ]
+    }
+  ]
+}
