@@ -1,3 +1,8 @@
 node_modules/
 .DS_Store
 *.log
+# 验证截图不进仓库（会话内容/路径等隐私信息）
+docs/
+*.png
+*.jpg
+*.jpeg
