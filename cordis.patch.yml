@@ -2,4 +2,4 @@
 # Gated by `html[data-dsh-mobile]`; desktop viewports keep the shipped layout.
 - insert:
     - id: dsh-mobile-ui
-      name: '@local/dsh-mobile-ui'
+      name: 'dsh-mobile-ui'
