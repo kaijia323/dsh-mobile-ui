@@ -694,11 +694,13 @@ html[data-dsh-mobile] ._8HJdBW_themeCube {
             // in-place operation, so the list stays where the user left it.
             if (target.closest('[role="menu"]')) return;
             if (target.closest('[data-slot="sidebar"]')) {
-              // Brand/New Session/panel rows collapse the drawer immediately;
-              // only the browse-and-manage regions keep it.
+              // Only a button press navigates: brand / New Session / panel rows
+              // collapse the drawer immediately. Text and blank areas inside the
+              // drawer (workspace rows, search field, empty space) are in-place
+              // interactions and keep it.
               const button = target.closest('button');
               if (
-                button === null ||
+                button !== null &&
                 button.closest(
                   '[data-slot="sidebar.workspaces"], [data-slot="sidebar.settings"], [data-slot="sidebar.footer.action"]',
                 ) === null
@@ -711,7 +713,10 @@ html[data-dsh-mobile] ._8HJdBW_themeCube {
           };
 
           const onKeyDown = (event) => {
-            if (event.key === 'Escape' && isMobile()) closeDrawer();
+            if (event.key !== 'Escape' || !isMobile()) return;
+            // Esc closes an open popover first; the drawer stays behind it.
+            if (document.querySelector('[role="menu"], [role="listbox"]')) return;
+            closeDrawer();
           };
 
           // A Session switch (including the blank New Session state) closes it.
@@ -739,10 +744,12 @@ html[data-dsh-mobile] ._8HJdBW_themeCube {
           attachPanelObserver();
 
           document.addEventListener('click', onClick, true);
-          document.addEventListener('keydown', onKeyDown);
+          // Capture phase: the shipped menu closes on Escape from its own React
+          // handler, so the menu must still be visible when we inspect it.
+          document.addEventListener('keydown', onKeyDown, true);
           return () => {
             document.removeEventListener('click', onClick, true);
-            document.removeEventListener('keydown', onKeyDown);
+            document.removeEventListener('keydown', onKeyDown, true);
             sessionObserver.disconnect();
             if (panelObserver) panelObserver.disconnect();
             bodyObserver.disconnect();
