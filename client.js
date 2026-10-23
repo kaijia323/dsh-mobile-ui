@@ -718,7 +718,10 @@ html[data-dsh-mobile] ._8HJdBW_themeCube {
           const root = document.documentElement;
           const isMobile = () => root.hasAttribute('data-dsh-mobile');
           const closeDrawer = () => {
-            if (drawerOpen()) ctx.layout.toggleSidebar();
+            // Observers below fire on desktop too: a Session load or a main-panel
+            // switch must not collapse the desktop sidebar, only a phone drawer.
+            if (!isMobile() || !drawerOpen()) return;
+            ctx.layout.toggleSidebar();
           };
 
           const onClick = (event) => {
