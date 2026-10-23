@@ -450,11 +450,17 @@ html[data-dsh-mobile] .VOzbGW_header {
   position: absolute !important;
   top: calc(env(safe-area-inset-top) + 8px) !important;
   right: 10px !important;
+  /* The header is pulled out of flow, so later siblings (e.g. the plugin
+     market's own title row rendered inside the settings body) would paint
+     over the close button and swallow its taps — 2026-10-23 user report:
+     "通过设置打开插件市场后无法关闭". Keep the floating header above the body. */
+  z-index: 6 !important;
   width: auto !important;
   height: auto !important;
   padding: 0 !important;
   border: 0 !important;
   background: transparent !important;
+  pointer-events: auto;
 }
 
 html[data-dsh-mobile] .VOzbGW_options {
