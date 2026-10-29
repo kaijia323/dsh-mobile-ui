@@ -16,8 +16,8 @@
         "zh": "移动端外壳"
       },
       "description": {
-        "en": "Drawer navigation, touch-sized chrome, safe areas and a full-width conversation on phones; desktop stays unchanged.",
-        "zh": "手机上使用抽屉导航、触控尺寸控件、安全区适配和全宽对话区；桌面端保持不变。"
+        "en": "Mobile patch layer for DSH Web 0.2.2+: overlay drawer, safe areas, terminal key row and touch fixes; desktop stays unchanged.",
+        "zh": "DSH Web 0.2.2+ 的移动端补丁层：抽屉导航、安全区、终端按键条与触屏优化；桌面端保持不变。"
       },
       "icon": "icons/dsh-mobile-ui.svg",
       "author": "kaijia323",
@@ -26,6 +26,15 @@
         "url": "https://github.com/kaijia323/dsh-mobile-ui"
       },
       "versions": [
+        {
+          "version": "0.2.0",
+          "publishTimestamp": 1793293963,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/kaijia323/dsh-mobile-ui",
+            "commit": "10bde2adb46febf5116054216badbc0b4e764abc"
+          }
+        },
         {
           "version": "0.1.4",
           "publishTimestamp": 1792740797,
