@@ -362,8 +362,7 @@ html[data-dsh-mobile] [data-slot="conversation.header"] > header > div:nth-child
   overflow: hidden;
 }
 
-/* Action labels truncate instead of widening the bar; the running-jobs pill
-   is the widest one, so it gets a tighter cap. */
+/* Action labels truncate instead of widening the bar. */
 html[data-dsh-mobile] [data-slot="conversation.header"] > header button > span {
   max-width: 96px;
   overflow: hidden;
@@ -371,9 +370,21 @@ html[data-dsh-mobile] [data-slot="conversation.header"] > header button > span {
   white-space: nowrap;
 }
 
+/* The running-jobs trigger ships a sentence label ("2 个后台任务运行中"). On a
+   phone that sentence is the widest element in the header row and squeezes the
+   Session title down to a single character. The client half rewrites the
+   visible label to just its count (the aria-label keeps the sentence for
+   assistive tech), so the chip becomes icon + number and the title gets the
+   width back. */
+html[data-dsh-mobile] [data-slot="conversation.header"] button[aria-label*="后台任务"],
+html[data-dsh-mobile] [data-slot="conversation.header"] button[aria-label*="background job"] {
+  gap: 2px !important;
+  font-variant-numeric: tabular-nums;
+}
+
 html[data-dsh-mobile] [data-slot="conversation.header"] button[aria-label*="后台任务"] > span,
-html[data-dsh-mobile] [data-slot="conversation.header"] button[aria-label*="background task"] > span {
-  max-width: 72px;
+html[data-dsh-mobile] [data-slot="conversation.header"] button[aria-label*="background job"] > span {
+  max-width: none;
 }
 
 /* ------------------------------------------------------------
@@ -948,6 +959,69 @@ html[data-dsh-mobile] ._8HJdBW_themeCube {
             document.removeEventListener('click', onClick, true);
           };
         }, 'dsh-mobile-ui: composer focus guard');
+
+        // ---- compact running-jobs pill ------------------------------------
+        // The shipped pill label is a sentence ("2 个后台任务运行中") and, on a
+        // phone, it is the widest thing in the header row: it squeezes the
+        // Session title down to a single character. Keep the sentence in
+        // `aria-label` and rewrite only the visible text node to its count while
+        // the mobile shell is on, so the chip reads icon + number. React owns that
+        // text node, so it is edited in place and every header mutation
+        // re-normalizes it; turning the mobile shell off restores the sentence.
+        ctx.effect(() => {
+          const root = document.documentElement;
+          const TRIGGER =
+            '[data-slot="conversation.header"] button[aria-label*="后台任务"], ' +
+            '[data-slot="conversation.header"] button[aria-label*="background job"]';
+
+          const normalize = (button, mobile) => {
+            const span = button.querySelector(':scope > span');
+            const label = button.getAttribute('aria-label') || '';
+            if (span === null || label === '') return;
+            const text = span.firstChild;
+            if (text === null || text.nodeType !== Node.TEXT_NODE) return;
+            const match = label.match(/\d+/);
+            const next = mobile && match !== null ? match[0] : label;
+            if (text.nodeValue !== next) text.nodeValue = next;
+          };
+
+          const normalizeHeader = (mobile) => {
+            for (const button of document.querySelectorAll(TRIGGER)) {
+              normalize(button, mobile);
+            }
+          };
+
+          const observer = new MutationObserver((records) => {
+            let touched = false;
+            for (const record of records) {
+              let target = record.target;
+              if (target instanceof Text) target = target.parentNode;
+              if (
+                target instanceof Element &&
+                target.closest('[data-slot="conversation.header"]') !== null
+              ) {
+                touched = true;
+                break;
+              }
+            }
+            if (touched) normalizeHeader(root.hasAttribute('data-dsh-mobile'));
+          });
+          observer.observe(document.body, {
+            subtree: true,
+            childList: true,
+            characterData: true,
+          });
+
+          const query = window.matchMedia(MOBILE_QUERY);
+          const sync = () => normalizeHeader(root.hasAttribute('data-dsh-mobile'));
+          query.addEventListener('change', sync);
+          sync();
+          return () => {
+            observer.disconnect();
+            query.removeEventListener('change', sync);
+            normalizeHeader(false);
+          };
+        }, 'dsh-mobile-ui: compact jobs pill');
 
         // ---- header navigation seat ---------------------------------------
         ctx.slots.inject('conversation.header.leading', () =>
