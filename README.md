@@ -151,15 +151,20 @@ git clone https://github.com/kaijia323/dsh-mobile-ui.git ~/dsh-mobile-ui
 
 ## 发布
 
-版本号、tag、插件市场索引三处必须一起动；少一处，用户从市场装到的还是旧版：
+版本号、tag、GitHub Release、插件市场索引四处必须一起动；少一处，用户看到的还是旧版：
 
 1. `package.json` 的 `version` 加一个补丁号，改动写进提交信息，推 `main`；
 2. `git tag vX.Y.Z` 并推 tag；
-3. 同步市场索引（`gh-pages` 分支的 `index.json`）：在 `versions` 最前面插入
+3. 建 GitHub Release（`gh` 在 `~/.local/bin/gh`，已登录 kaijia323）：
+   `gh release create vX.Y.Z -R kaijia323/dsh-mobile-ui --title "vX.Y.Z — <一句话>" --notes-file <notes> --latest`。
+   正文照 0.2.x 的格式：改了什么 / 验证 / 怎么升级，末尾附
+   `https://github.com/kaijia323/dsh-mobile-ui/compare/v<上一个>...vX.Y.Z`；
+4. 同步市场索引（`gh-pages` 分支的 `index.json`）：在 `versions` 最前面插入
    `{"version": "X.Y.Z", "publishTimestamp": <unix 秒>, "source": {"type": "git", "url": "https://github.com/kaijia323/dsh-mobile-ui", "commit": "<tag 指向的 commit>"}}`，
    提交 `market: publish vX.Y.Z` 推到 `gh-pages`；
-4. 核对 `https://raw.githubusercontent.com/kaijia323/dsh-mobile-ui/gh-pages/index.json`（立即生效）
-   和 `https://kaijia323.github.io/dsh-mobile-ui/index.json`（Pages 要等构建），最新版本必须是刚发的那个。
+5. 核对三处线上状态：`gh release list` 里 `Latest` 是刚发的 tag、
+   `https://raw.githubusercontent.com/kaijia323/dsh-mobile-ui/gh-pages/index.json`（立即生效）、
+   `https://kaijia323.github.io/dsh-mobile-ui/index.json`（Pages 要等构建），最新版本都必须是刚发的那个。
 
 ## License
 
