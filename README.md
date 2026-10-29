@@ -149,6 +149,18 @@ git clone https://github.com/kaijia323/dsh-mobile-ui.git ~/dsh-mobile-ui
 - 轨迹详情的安全区补丁按 `.Y0dWHa_*` 匹配；官方改名后只会少这层 padding，官方布局不变。
 - 设置面板只用 `.VOzbGW_panel` 补安全区；官方改名后少这层 padding，面板布局仍是官方的。
 
+## 发布
+
+版本号、tag、插件市场索引三处必须一起动；少一处，用户从市场装到的还是旧版：
+
+1. `package.json` 的 `version` 加一个补丁号，改动写进提交信息，推 `main`；
+2. `git tag vX.Y.Z` 并推 tag；
+3. 同步市场索引（`gh-pages` 分支的 `index.json`）：在 `versions` 最前面插入
+   `{"version": "X.Y.Z", "publishTimestamp": <unix 秒>, "source": {"type": "git", "url": "https://github.com/kaijia323/dsh-mobile-ui", "commit": "<tag 指向的 commit>"}}`，
+   提交 `market: publish vX.Y.Z` 推到 `gh-pages`；
+4. 核对 `https://raw.githubusercontent.com/kaijia323/dsh-mobile-ui/gh-pages/index.json`（立即生效）
+   和 `https://kaijia323.github.io/dsh-mobile-ui/index.json`（Pages 要等构建），最新版本必须是刚发的那个。
+
 ## License
 
 MIT
