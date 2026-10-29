@@ -374,6 +374,16 @@ html[data-dsh-mobile] [data-dockkit-strip] button {
   min-height: 28px;
 }
 
+/* The shipped tab close is a 20px box pinned 4px in from the 28px tab's top
+   and right edges. Growing it to the 28px touch minimum pushes the glyph 4px
+   down and 4px left — out of the tab's optical centre and past its bottom
+   edge. Pin the grown box to the tab edges instead: the 14px glyph lands on
+   the shipped pixel, only the hit area grows. */
+html[data-dsh-mobile] [data-dockkit-strip] [data-dockkit-tab-close] {
+  top: 0 !important;
+  right: 0 !important;
+}
+
 /* ---- trajectory: the shipped 92% sheet, plus safe-area padding ---- */
 /* DSH 0.2.2 already turns the event details into a 92%-wide overlay below
    760px; layout stays official, only the notch/home-indicator padding is ours. */

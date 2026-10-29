@@ -131,6 +131,7 @@ git clone https://github.com/kaijia323/dsh-mobile-ui.git ~/dsh-mobile-ui
 - 设置面板全屏、无横向溢出；
 - 通用弹窗根层留白、对话框不超出视口；
 - 右侧栏全屏、标签条可横滑、按钮最小 28px；
+- 右栏标签的关闭键放大到 28px 触摸盒后仍与标签同轴（14px 图标回到官方像素位置，不溢出标签）；
 - 终端按键条出现，Esc/Tab/方向键事件送达，Ctrl 粘滞后转发的组合键带 `ctrlKey`；
 - 触摸长按拖拽的 DragEvent 协议（dragstart → dragover → drop → dragend）；
 - 模拟刘海/小白条（CDP safe-area：top 47 / bottom 34，以及仅 bottom 34）：抽屉仍是 844px 不溢出，
