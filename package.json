@@ -1,9 +1,12 @@
 {
   "name": "dsh-mobile-ui",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "private": false,
   "type": "module",
-  "description": "Mobile web shell for DeepSeek Harness: overlay drawer navigation, touch-sized chrome, safe areas.",
+  "description": "Mobile shell for DeepSeek Harness Web 0.2.2+: overlay drawer, safe areas, touch and keyboard fixes.",
+  "engines": {
+    "dsh": ">=0.2.2-alpha.2"
+  },
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",

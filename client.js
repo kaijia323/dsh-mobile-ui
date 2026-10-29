@@ -1,14 +1,19 @@
 /**
- * Mobile web shell for the Harness Web GUI (browser half).
+ * Mobile patch layer for the Harness Web GUI (browser half).
  *
- * Everything here is additive and gated by `html[data-dsh-mobile]`:
- * - the left rail stops taking grid space and becomes an overlay drawer;
- * - the conversation owns the whole viewport, with a leading drawer button in
- *   the resident header instead of the rail;
- * - touch sizes, safe areas, keyboard-height tracking and reading typography.
+ * Targets DSH Web 0.2.2+: the shipped shell already handles the phone-sized
+ * settings panel, touch row actions, composer keyboard focus and the
+ * full-screen right panel. This layer only adds what is still missing:
+ * - the 56px rail becomes an overlay drawer;
+ * - safe-area padding for the chrome the shipped shell leaves unpadded;
+ * - 16px text fields (no iOS focus zoom), swipeable right-panel tabs,
+ *   a terminal key row, a full-screen trajectory detail sheet, and long-press
+ *   reordering for the shipped HTML5 drag handles;
+ * - reading typography and touch target minimums.
  *
- * A desktop viewport never receives the attribute, so the shipped layout is
- * untouched. `?dsh-mobile=off` disables the layer for one load.
+ * Everything is additive and gated by `html[data-dsh-mobile]`; a desktop
+ * viewport never receives the attribute. `?dsh-mobile=off` disables the
+ * layer for one load.
  */
 window.__ModuleLoader__.load({
   id: 'dsh-mobile-ui',
@@ -34,8 +39,13 @@ window.__ModuleLoader__.load({
 
     const CSS = `
 /* ============================================================
-   Mobile web shell. Every rule is gated by html[data-dsh-mobile];
-   a desktop viewport never receives that attribute.
+   Mobile web shell for DSH Web (0.2.2+).
+
+   Every rule is additive and gated by html[data-dsh-mobile]: a desktop
+   viewport never receives that attribute. Features the shipped shell
+   already handles on phones (full-screen settings, touch row actions,
+   the composer keyboard policy, the full-screen right panel) are left
+   alone on purpose. \`?dsh-mobile=off\` disables the layer for one load.
    ============================================================ */
 
 html[data-dsh-mobile] {
@@ -51,16 +61,14 @@ html[data-dsh-mobile] body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* The conversation owns the viewport: neither side column takes grid
-   space any more. Both are re-seated as overlays below. */
+/* ---- frame ---------------------------------------------------
+   The 56px rail leaves the grid, so the conversation owns the width. */
 html[data-dsh-mobile] #root > [data-slot="root"] > div:has(> [data-shell-overlay]) {
   grid-template-columns: 0 minmax(0, 1fr) 0 !important;
-  height: var(--dsh-mobile-vv, 100%);
   transition: none !important;
 }
 
-/* The fixed sidebar leaves the grid flow, so every remaining column keeps an
-   explicit seat instead of being auto-placed one column to the left. */
+/* Grid children keep explicit seats once the rail leaves the flow. */
 html[data-dsh-mobile] #root > [data-slot="root"] > div:has(> [data-shell-overlay]) > div:has(> [data-slot="main"]) {
   grid-column: 2;
   grid-row: 1;
@@ -71,16 +79,18 @@ html[data-dsh-mobile] #root > [data-slot="root"] > div:has(> [data-shell-overlay
   grid-row: 1;
 }
 
-/* Left column -> overlay navigation drawer. */
+/* ---- drawer -------------------------------------------------- */
 html[data-dsh-mobile] #root > [data-slot="root"] > div > div:has(> [data-slot="sidebar"]) {
   position: fixed !important;
   top: 0;
   left: 0;
   width: min(84vw, 320px) !important;
-  height: var(--dsh-mobile-vv, 100%) !important;
+  height: 100% !important;
+  box-sizing: border-box;
   z-index: 60;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
   border-radius: 0 16px 16px 0;
   box-shadow: 0 18px 56px rgba(15, 17, 21, 0.26);
   transform: translateX(-104%);
@@ -103,14 +113,45 @@ html[data-dsh-mobile] #root > [data-slot="root"] > div:not([data-sidebar-collaps
   background: rgba(15, 17, 21, 0.36);
 }
 
-/* Header: reclaim the horizontal padding and honour the notch. */
+/* ---- header -------------------------------------------------- */
 html[data-dsh-mobile] [data-slot="conversation.header"] > header {
   padding-top: calc(8px + env(safe-area-inset-top)) !important;
-  padding-left: 8px !important;
-  /* The far-right seat overhangs the content box by 16px on purpose, so the
-     right padding keeps it inside the viewport instead of clipping the
-     right-panel control. */
-  padding-right: 20px !important;
+  padding-left: max(8px, env(safe-area-inset-left)) !important;
+  /* The far-right seat overhangs the content box on purpose; this keeps the
+     right-panel control inside the viewport instead of clipping it. */
+  padding-right: max(20px, env(safe-area-inset-right)) !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  min-height: 44px;
+}
+
+html[data-dsh-mobile] [data-slot="conversation.header"] > header > div {
+  min-width: 0;
+}
+
+html[data-dsh-mobile] [data-slot="conversation.header"] > header > div > div {
+  flex-wrap: nowrap !important;
+}
+
+/* The session/title column gives up width first instead of pushing actions out.
+   Anchored to the shipped session-header slot rather than a child index. */
+html[data-dsh-mobile] [data-slot="conversation.header"] > header > [data-slot="conversation.session.header"] {
+  flex: 1 1 auto !important;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Action labels truncate instead of widening the bar. */
+html[data-dsh-mobile] [data-slot="conversation.header"] > header button > span {
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-dsh-mobile] [data-slot="conversation.header"] button[aria-label*="后台任务"] > span,
+html[data-dsh-mobile] [data-slot="conversation.header"] button[aria-label*="background job"] > span {
+  max-width: 72px;
 }
 
 /* The leading seat's drawer button. */
@@ -135,8 +176,7 @@ html[data-dsh-mobile] [data-dsh-mobile-nav]:active {
   background: var(--dsw-alias-bg-layer-2);
 }
 
-/* Global panels (Plugins, Automation tasks) replace the conversation header,
-   so they get a bottom bar with the way back instead of the floating seat. */
+/* ---- navigation bar for global panels ------------------------ */
 html[data-dsh-mobile] [data-dsh-mobile-panel-bar] {
   display: none;
   align-items: center;
@@ -180,62 +220,28 @@ html[data-dsh-mobile] [data-dsh-mobile-panel-bar] button:active {
   background: var(--dsw-alias-bg-layer-2);
 }
 
-/* Header: reclaim the horizontal padding and honour the notch. */
-html[data-dsh-mobile] [data-slot="conversation.header"] > header {
-  padding-top: calc(8px + env(safe-area-inset-top)) !important;
-  padding-left: 8px !important;
-  /* The far-right seat overhangs the content box by 16px on purpose, so the
-     right padding keeps it inside the viewport instead of clipping the
-     right-panel control. */
-  padding-right: 20px !important;
+/* ---- composer / reading -------------------------------------- */
+html[data-dsh-mobile] [data-composer-seat] {
+  padding-bottom: calc(6px + env(safe-area-inset-bottom));
 }
 
-/* The leading seat's drawer button. */
-html[data-dsh-mobile] [data-dsh-mobile-nav] {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 34px;
-  height: 34px;
-  margin-right: 2px;
-  padding: 0;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--dsw-alias-label-primary);
+html[data-dsh-mobile] [data-conversation-region="composer"] [contenteditable="true"] {
+  font-size: 16px !important;
+  line-height: 24px !important;
+}
+
+html[data-dsh-mobile] [data-conversation-region="composer"] button {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
 
-html[data-dsh-mobile] [data-dsh-mobile-nav]:active {
-  background: var(--dsw-alias-bg-layer-2);
+html[data-dsh-mobile] body {
+  --dsh-content-font-size: 16px !important;
+  --dsh-code-font-size: 13.5px !important;
 }
 
-/* Touch devices: the shipped session rows reveal their actions only on hover,
-   which never happens on a phone. Keep just the overflow menu visible so
-   rename/archive/pin stay reachable. */
-@media (hover: none) {
-  html[data-dsh-mobile] [data-slot="sidebar.workspaces"] [data-row-key^="session:"] > :has(button),
-  html[data-dsh-mobile] [data-slot="sidebar.workspaces"] [data-row-key^="workspace:"] > :has(button) {
-    display: inline-flex !important;
-    padding-left: 2px;
-  }
-
-  /* The relative time is the sibling just before the actions; dropping it keeps
-     the row from reading like a truncated timestamp. */
-  html[data-dsh-mobile] [data-slot="sidebar.workspaces"] [data-row-key^="session:"] > :nth-last-child(2) {
-    display: none !important;
-  }
-
-  html[data-dsh-mobile] [data-slot="sidebar.workspaces"] [data-row-key^="session:"] > :has(button) > :nth-child(n + 2) {
-    display: none !important;
-  }
-}
-
-/* Model selector: the trigger is capped at 45% of the control row, which
-   truncates "DeepSeek-V4.1-Flash" on a phone. The version tag goes away and the
-   cap moves to 60%, which still fits the row's own compact measuring. */
+/* Model selector: keep the name readable instead of collapsing to an icon
+   as early as the shipped measuring would. The version tag goes away. */
 html[data-dsh-mobile] [data-conversation-region="composer"] ._7KE1Ra_trigger {
   max-width: min(360px, 60cqw) !important;
 }
@@ -245,17 +251,8 @@ html[data-dsh-mobile] [data-conversation-region="composer"] [data-slot="conversa
   display: none !important;
 }
 
-/* Composer tool row: reclaim the few pixels the model name needs so the
-   shipped compact measuring keeps the text instead of collapsing to an icon. */
-html[data-dsh-mobile] [data-conversation-region="composer"] .uV2eYG_row {
-  padding-left: 6px !important;
-  padding-right: 6px !important;
-  gap: 8px !important;
-}
-
-/* Composer dock statistics: the two pills stay visible (a user on Work details
-   = Detailed expects them); drop their decorative icons, tighten the row and
-   shrink the type a little so the numbers are not ellipsised. */
+/* Composer statistics: keep both pills, drop decorative icons and tighten
+   the type so the numbers are not ellipsised. */
 html[data-dsh-mobile] [data-composer-seat] .bOPqQW_pill > svg {
   display: none !important;
 }
@@ -271,38 +268,14 @@ html[data-dsh-mobile] [data-composer-seat] .uV2eYG_dock {
   gap: 6px !important;
 }
 
-/* Reading: phone-sized body copy and code. */
-html[data-dsh-mobile] body {
-  --dsh-content-font-size: 16px !important;
-  --dsh-code-font-size: 13.5px !important;
-}
-
-/* Composer: full-width, safe area below, 16px so iOS does not zoom on focus. */
-html[data-dsh-mobile] [data-composer-seat] {
-  padding-bottom: calc(6px + env(safe-area-inset-bottom));
-}
-
-html[data-dsh-mobile] [data-conversation-region="composer"] [contenteditable="true"] {
-  font-size: 16px !important;
-  line-height: 24px !important;
-}
-
-html[data-dsh-mobile] [data-conversation-region="composer"] button {
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-/* Touch devices: no hover-only affordances, and comfortable targets. */
+/* Touch targets: comfortable minimums, with the compact split chip and the
+   composer's round controls exempted so their geometry stays intact. */
 @media (hover: none) {
   html[data-dsh-mobile] [data-slot="sidebar"] button,
   html[data-dsh-mobile] [data-slot="conversation.header"] button {
     min-height: 36px;
   }
 
-  /* The bordered "open with file manager" split control is a compact 24px
-     chip by design. The 36px touch height above makes its button taller than
-     the chip, so the icon clips and the box drifts off the row's centre line.
-     Exempt the chip and let the button fill it. */
   html[data-dsh-mobile] [data-slot="conversation.header"] [data-open-target="directory"] {
     width: 24px !important;
     height: 24px !important;
@@ -319,8 +292,6 @@ html[data-dsh-mobile] [data-conversation-region="composer"] button {
     justify-content: center !important;
   }
 
-  /* The composer's round controls keep a square box, otherwise a min-height
-     rule turns them into ovals. */
   html[data-dsh-mobile] [data-conversation-region="composer"] .uV2eYG_add,
   html[data-dsh-mobile] [data-conversation-region="composer"] .uV2eYG_primary {
     width: 32px !important;
@@ -331,71 +302,7 @@ html[data-dsh-mobile] [data-conversation-region="composer"] button {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html[data-dsh-mobile] #root > [data-slot="root"] > div > div:has(> [data-slot="sidebar"]) {
-    transition: none;
-  }
-}
-
-/* ------------------------------------------------------------
-   Structural header layout (build-agnostic).
-   Extra header actions (running jobs, agent teams, ...) must not
-   wrap the bar into a second row or squeeze the title into a sliver.
-   ------------------------------------------------------------ */
-html[data-dsh-mobile] [data-slot="conversation.header"] > header {
-  flex-wrap: nowrap !important;
-  align-items: center !important;
-  min-height: 44px;
-}
-
-html[data-dsh-mobile] [data-slot="conversation.header"] > header > div {
-  min-width: 0;
-}
-
-html[data-dsh-mobile] [data-slot="conversation.header"] > header > div > div {
-  flex-wrap: nowrap !important;
-}
-
-/* The session/title column gives up width first instead of pushing actions out. */
-html[data-dsh-mobile] [data-slot="conversation.header"] > header > div:nth-child(2) {
-  flex: 1 1 auto !important;
-  overflow: hidden;
-}
-
-/* Action labels truncate instead of widening the bar. */
-html[data-dsh-mobile] [data-slot="conversation.header"] > header button > span {
-  max-width: 96px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* The running-jobs trigger ships a sentence label ("2 个后台任务运行中"). On a
-   phone that sentence is the widest element in the header row and squeezes the
-   Session title down to a single character. The client half rewrites the
-   visible label to just its count (the aria-label keeps the sentence for
-   assistive tech), so the chip becomes icon + number and the title gets the
-   width back. */
-html[data-dsh-mobile] [data-slot="conversation.header"] button[aria-label*="后台任务"],
-html[data-dsh-mobile] [data-slot="conversation.header"] button[aria-label*="background job"] {
-  gap: 2px !important;
-  font-variant-numeric: tabular-nums;
-}
-
-html[data-dsh-mobile] [data-slot="conversation.header"] button[aria-label*="后台任务"] > span,
-html[data-dsh-mobile] [data-slot="conversation.header"] button[aria-label*="background job"] > span {
-  max-width: none;
-}
-
-/* ------------------------------------------------------------
-   Version-tied selectors.
-   The names below are generated by the installed DSH client
-   build. If an upgrade renames them these rules simply stop
-   matching; the rest of the mobile shell keeps working.
-   ------------------------------------------------------------ */
-
-/* Conversation header on a phone: the subagent counter keeps its icon but
-   drops the text label, so the right-panel control stays inside the frame. */
+/* Header subagent counter: keep the icon, drop the label. */
 html[data-dsh-mobile] .ZKlsPq_trigger {
   width: 28px !important;
   padding: 0 !important;
@@ -407,110 +314,128 @@ html[data-dsh-mobile] .ZKlsPq_trigger > span {
   display: none !important;
 }
 
-html[data-dsh-mobile] .wSkVaW_titleCluster {
-  min-width: 0 !important;
+/* ---- safe areas for the shipped chrome ----------------------- */
+/* Modal layer: keep dialogs off the notch and the home indicator. */
+html[data-dsh-mobile] div:has(> [role="dialog"][aria-modal="true"]):not(:has(> .VOzbGW_panel)) {
+  padding-top: max(16px, env(safe-area-inset-top)) !important;
+  padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+  padding-left: max(16px, env(safe-area-inset-left)) !important;
+  padding-right: max(16px, env(safe-area-inset-right)) !important;
 }
 
-html[data-dsh-mobile] .wSkVaW_crumbs {
-  min-width: 0 !important;
+html[data-dsh-mobile] [role="dialog"][aria-modal="true"]:not(.VOzbGW_panel) {
+  /* vh fallback for browsers without dynamic viewport units. */
+  max-height: calc(100vh - max(16px, env(safe-area-inset-top)) - max(16px, env(safe-area-inset-bottom))) !important;
+  max-height: calc(100dvh - max(16px, env(safe-area-inset-top)) - max(16px, env(safe-area-inset-bottom))) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
 }
 
-/* Settings dialog: full-screen sheet with the section list as a horizontal
-   strip. The shipped two-column dialog leaves the option column 154px wide
-   on a phone. */
+/* Toasts are fixed at the top; move them below the notch. */
+html[data-dsh-mobile] [class*="_toast_"] {
+  top: calc(40px + env(safe-area-inset-top)) !important;
+  max-width: min(640px, calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right))) !important;
+}
+
+/* Right panel: full-screen strip clears the notch and the home indicator. */
+html[data-dsh-mobile] [data-dockkit-strip] {
+  padding-top: calc(10px + env(safe-area-inset-top)) !important;
+}
+
+html[data-dsh-mobile] [data-sidebar-right-session] [data-dockkit-pane] {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Settings keeps the shipped full-screen panel; only safe-area padding is ours. */
 html[data-dsh-mobile] .VOzbGW_panel {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: var(--dsh-mobile-vv, 100%) !important;
-  max-width: none !important;
-  max-height: none !important;
-  border-radius: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
+  box-sizing: border-box !important;
+  padding-top: env(safe-area-inset-top) !important;
+  padding-bottom: env(safe-area-inset-bottom) !important;
+}
+
+/* ---- touch typing -------------------------------------------- */
+/* iOS zooms any focused text field below 16px. Force the minimum once, for
+   every field; the shipped 16px overrides stay valid. */
+html[data-dsh-mobile] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="file"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+html[data-dsh-mobile] textarea {
+  font-size: 16px !important;
+}
+
+/* ---- right-panel tab strip ----------------------------------- */
+/* The strip disables touch panning for its drag gesture; on a phone
+   horizontal swiping matters more than reordering tabs. */
+html[data-dsh-mobile] [data-dockkit-strip],
+html[data-dsh-mobile] [data-dockkit-strip-tabs] {
+  touch-action: pan-x !important;
+}
+
+html[data-dsh-mobile] [data-dockkit-strip] button {
+  min-width: 28px;
+  min-height: 28px;
+}
+
+/* ---- trajectory: the shipped 92% sheet, plus safe-area padding ---- */
+/* DSH 0.2.2 already turns the event details into a 92%-wide overlay below
+   760px; layout stays official, only the notch/home-indicator padding is ours. */
+html[data-dsh-mobile] .Y0dWHa_details {
+  box-sizing: border-box;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-html[data-dsh-mobile] .VOzbGW_nav {
-  width: 100% !important;
-  height: auto !important;
-  flex: none !important;
-  padding: 10px 14px 0 !important;
-  border-right: 0 !important;
-  border-bottom: 0.5px solid var(--dsw-alias-border-l1);
+/* ---- terminal: phone key bar -------------------------------- */
+html[data-dsh-mobile] [data-sidebar-terminal] {
+  position: relative;
+  box-sizing: border-box;
+  padding-bottom: calc(44px + env(safe-area-inset-bottom));
 }
 
-html[data-dsh-mobile] .VOzbGW_navTitle {
-  padding: 0 2px 10px !important;
-  font-size: 17px !important;
-}
-
-html[data-dsh-mobile] .VOzbGW_navList {
-  display: flex !important;
-  flex-direction: row !important;
-  gap: 6px !important;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-  padding-bottom: 10px !important;
+html[data-dsh-mobile] [data-dsh-mobile-keys] {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: calc(40px + env(safe-area-inset-bottom));
+  padding: 2px 8px env(safe-area-inset-bottom);
+  box-sizing: border-box;
+  background: var(--dsw-specific-sidebar-fill);
+  border-top: 0.5px solid var(--dsw-alias-border-l1);
+  overflow-x: auto;
   scrollbar-width: none;
 }
 
-html[data-dsh-mobile] .VOzbGW_navList::-webkit-scrollbar {
+html[data-dsh-mobile] [data-dsh-mobile-keys]::-webkit-scrollbar {
   display: none;
 }
 
-html[data-dsh-mobile] .VOzbGW_navCell {
-  flex: none !important;
-  width: auto !important;
-  height: 34px !important;
-  padding: 0 12px !important;
-  border-radius: 999px !important;
-  white-space: nowrap;
+html[data-dsh-mobile] [data-dsh-mobile-keys] button {
+  flex: none;
+  min-width: 40px;
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 13px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
-html[data-dsh-mobile] .VOzbGW_content {
-  width: 100% !important;
-  flex: 1 1 auto !important;
-  min-height: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
+html[data-dsh-mobile] [data-dsh-mobile-keys] button[data-armed] {
+  background: var(--dsw-alias-state-business-primary);
+  color: #fff;
 }
 
-html[data-dsh-mobile] .VOzbGW_header {
-  position: absolute !important;
-  top: calc(env(safe-area-inset-top) + 8px) !important;
-  right: 10px !important;
-  /* The header is pulled out of flow, so later siblings (e.g. the plugin
-     market's own title row rendered inside the settings body) would paint
-     over the close button and swallow its taps — 2026-10-23 user report:
-     "通过设置打开插件市场后无法关闭". Keep the floating header above the body. */
-  z-index: 6 !important;
-  width: auto !important;
-  height: auto !important;
-  padding: 0 !important;
-  border: 0 !important;
-  background: transparent !important;
-  pointer-events: auto;
-}
-
-html[data-dsh-mobile] .VOzbGW_options {
-  flex: 1 1 auto !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  padding: 8px 16px calc(24px + env(safe-area-inset-bottom)) !important;
-}
-
-/* Settings → Appearance: three theme cubes side by side instead of a
-   full-width stack. */
-html[data-dsh-mobile] ._8HJdBW_cubeRow {
-  gap: 8px !important;
-}
-
-html[data-dsh-mobile] ._8HJdBW_themeCube {
-  flex: 1 1 0 !important;
-  width: auto !important;
-  min-width: 0 !important;
+@media (prefers-reduced-motion: reduce) {
+  html[data-dsh-mobile] #root > [data-slot="root"] > div > div:has(> [data-slot="sidebar"]) {
+    transition: none;
+  }
 }
 
 `;
@@ -700,46 +625,6 @@ html[data-dsh-mobile] ._8HJdBW_themeCube {
           };
         }, 'dsh-mobile-ui: viewport flag');
 
-        // ---- keyboard / visible viewport height ---------------------------
-        ctx.effect(() => {
-          const root = document.documentElement;
-          const viewport = window.visualViewport;
-          const sync = () => {
-            if (!root.hasAttribute('data-dsh-mobile')) {
-              root.style.removeProperty('--dsh-mobile-vv');
-              root.style.removeProperty('--dsh-mobile-kb');
-              return;
-            }
-            const height = viewport
-              ? Math.round(viewport.height)
-              : window.innerHeight;
-            root.style.setProperty('--dsh-mobile-vv', `${height}px`);
-            const keyboard = viewport
-              ? Math.max(
-                  0,
-                  Math.round(
-                    window.innerHeight - viewport.height - viewport.offsetTop,
-                  ),
-                )
-              : 0;
-            root.style.setProperty('--dsh-mobile-kb', `${keyboard}px`);
-          };
-          sync();
-          window.addEventListener('resize', sync);
-          if (viewport) {
-            viewport.addEventListener('resize', sync);
-            viewport.addEventListener('scroll', sync);
-          }
-          return () => {
-            window.removeEventListener('resize', sync);
-            if (viewport) {
-              viewport.removeEventListener('resize', sync);
-              viewport.removeEventListener('scroll', sync);
-            }
-            root.style.removeProperty('--dsh-mobile-vv');
-            root.style.removeProperty('--dsh-mobile-kb');
-          };
-        }, 'dsh-mobile-ui: visible viewport');
 
         // ---- drawer dismissal --------------------------------------------
         // The drawer stays open for in-place interactions (search, menus,
@@ -857,108 +742,6 @@ html[data-dsh-mobile] ._8HJdBW_themeCube {
           return () => window.clearInterval(timer);
         }, 'dsh-mobile-ui: new-session drawer close');
 
-        // ---- composer focus guard -----------------------------------------
-        // The shipped composer focuses itself on Session switches and on the
-        // first paint. On a phone that pops the soft keyboard without the user
-        // asking for it, so drop focus that no tap preceded.
-        ctx.effect(() => {
-          const root = document.documentElement;
-          const ADD_MENU = '[class*="_3e4SsG_menu"]';
-          let lastComposerPointer = 0;
-          let lastComposerButton = 0;
-          let buttonFocusedEditor = false;
-
-          const insideComposer = (node) =>
-            node instanceof Element &&
-            node.closest('[data-conversation-region="composer"]') !== null;
-
-          const isEditor = (node) =>
-            node instanceof Element &&
-            (node.isContentEditable || node.tagName === 'TEXTAREA') &&
-            insideComposer(node);
-
-          const blurEditor = () => {
-            const editor = document.querySelector(
-              '[data-conversation-region="composer"] [contenteditable="true"]',
-            );
-            if (editor !== null && document.activeElement === editor) editor.blur();
-          };
-
-          const markPointer = (event) => {
-            const target = event.target;
-            if (!(target instanceof Element)) return;
-            if (target.closest('button')) {
-              if (insideComposer(target)) lastComposerButton = Date.now();
-              return;
-            }
-            if (insideComposer(target)) lastComposerPointer = Date.now();
-          };
-
-          const onFocusIn = (event) => {
-            if (!root.hasAttribute('data-dsh-mobile')) return;
-            const editor = event.target;
-            if (!isEditor(editor)) return;
-            // A tap on the editor itself: the user wants to type.
-            if (Date.now() - lastComposerPointer < 900) return;
-            // Buttons like "+" focus the editor only so their popover can mount.
-            // Keep the focus until that click is handled, then drop it in the very
-            // next task: the popover survives, the soft keyboard does not.
-            if (Date.now() - lastComposerButton < 1200) {
-              buttonFocusedEditor = true;
-              window.setTimeout(() => {
-                if (buttonFocusedEditor) {
-                  buttonFocusedEditor = false;
-                  blurEditor();
-                }
-              }, 350);
-              return;
-            }
-            // Focus nobody asked for (session switch, first paint): drop it.
-            editor.blur();
-          };
-
-          // Runs before React's handlers; the deferred blur still happens after
-          // the click has opened its popover.
-          const onClick = (event) => {
-            if (!root.hasAttribute('data-dsh-mobile') || !buttonFocusedEditor) return;
-            const target = event.target;
-            if (!(target instanceof Element)) return;
-            const button = target.closest('button');
-            if (button === null || !insideComposer(button)) return;
-            buttonFocusedEditor = false;
-            window.setTimeout(blurEditor, 0);
-          };
-
-          // A tap on the editor while the "+" panel is open means "let me type":
-          // close the panel first (its Escape handler lives on the editor).
-          const onEditorPointerDown = (event) => {
-            if (!root.hasAttribute('data-dsh-mobile')) return;
-            const target = event.target;
-            if (!isEditor(target)) return;
-            if (document.querySelector(ADD_MENU) === null) return;
-            target.dispatchEvent(
-              new KeyboardEvent('keydown', {
-                key: 'Escape',
-                code: 'Escape',
-                bubbles: true,
-                cancelable: true,
-              }),
-            );
-          };
-
-          document.addEventListener('pointerdown', markPointer, true);
-          document.addEventListener('touchstart', markPointer, true);
-          document.addEventListener('pointerdown', onEditorPointerDown, true);
-          document.addEventListener('focusin', onFocusIn, true);
-          document.addEventListener('click', onClick, true);
-          return () => {
-            document.removeEventListener('pointerdown', markPointer, true);
-            document.removeEventListener('touchstart', markPointer, true);
-            document.removeEventListener('pointerdown', onEditorPointerDown, true);
-            document.removeEventListener('focusin', onFocusIn, true);
-            document.removeEventListener('click', onClick, true);
-          };
-        }, 'dsh-mobile-ui: composer focus guard');
 
         // ---- compact running-jobs pill ------------------------------------
         // The shipped pill label is a sentence ("2 个后台任务运行中") and, on a
@@ -1022,6 +805,296 @@ html[data-dsh-mobile] ._8HJdBW_themeCube {
             normalizeHeader(false);
           };
         }, 'dsh-mobile-ui: compact jobs pill');
+
+        // ---- input focus reveal -------------------------------------------
+        // Text fields outside the composer (settings, plugin install, model
+        // keys, automation) live in fixed panels; once the soft keyboard opens
+        // the focused field can end up behind it. Bring it back after the
+        // keyboard settles, but only when it is actually out of view.
+        ctx.effect(() => {
+          const root = document.documentElement;
+          let timer = null;
+          const onFocusIn = (event) => {
+            if (!root.hasAttribute('data-dsh-mobile')) return;
+            const target = event.target;
+            if (!(target instanceof Element)) return;
+            if (target.closest('[data-conversation-region="composer"]')) return;
+            if (!target.matches('input, textarea, [contenteditable="true"]')) return;
+            if (timer !== null) window.clearTimeout(timer);
+            timer = window.setTimeout(() => {
+              timer = null;
+              if (!root.hasAttribute('data-dsh-mobile') || !target.isConnected) return;
+              const rect = target.getBoundingClientRect();
+              const viewport = window.visualViewport;
+              const height = viewport ? viewport.height : window.innerHeight;
+              if (rect.top >= 8 && rect.bottom <= height - 8) return;
+              target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }, 380);
+          };
+          document.addEventListener('focusin', onFocusIn, true);
+          return () => {
+            document.removeEventListener('focusin', onFocusIn, true);
+            if (timer !== null) window.clearTimeout(timer);
+          };
+        }, 'dsh-mobile-ui: input focus reveal');
+
+        // ---- terminal key bar ---------------------------------------------
+        // xterm has no phone modifier row: without Ctrl/Esc/Tab/arrows a
+        // terminal is barely usable from a touch keyboard. The bar dispatches
+        // the same keyboard events xterm already listens for, and Ctrl is
+        // sticky: arm it, then type the letter on the native keyboard.
+        ctx.effect(() => {
+          const root = document.documentElement;
+          let bar = null;
+          let armed = false;
+          let timer = null;
+
+          const makeKey = (init, keyCode) => {
+            const event = new KeyboardEvent('keydown', Object.assign({
+              bubbles: true,
+              cancelable: true,
+            }, init));
+            try {
+              Object.defineProperty(event, 'keyCode', { get: () => keyCode });
+              Object.defineProperty(event, 'which', { get: () => keyCode });
+            } catch {
+              // keyCode is advisory for xterm; key/code still carry the intent.
+            }
+            return event;
+          };
+
+          const dispatch = (host, key, code, keyCode, ctrlKey) => {
+            const area = host.querySelector('textarea.xterm-helper-textarea');
+            if (!area) return;
+            area.dispatchEvent(makeKey({ key, code, ctrlKey }, keyCode));
+          };
+
+          const renderArmed = () => {
+            if (bar === null) return;
+            const button = bar.querySelector('[data-key="ctrl"]');
+            if (button === null) return;
+            if (armed) button.setAttribute('data-armed', '');
+            else button.removeAttribute('data-armed');
+          };
+
+          const build = (host) => {
+            const next = document.createElement('div');
+            next.setAttribute('data-dsh-mobile-keys', '');
+            const keys = [
+              ['esc', 'Esc', 'Escape', 'Escape', 27],
+              ['tab', 'Tab', 'Tab', 'Tab', 9],
+              ['up', '\u2191', 'ArrowUp', 'ArrowUp', 38],
+              ['down', '\u2193', 'ArrowDown', 'ArrowDown', 40],
+              ['left', '\u2190', 'ArrowLeft', 'ArrowLeft', 37],
+              ['right', '\u2192', 'ArrowRight', 'ArrowRight', 39],
+              ['ctrl', 'Ctrl', '', '', 17],
+            ];
+            for (const [id, label, key, code, keyCode] of keys) {
+              const button = document.createElement('button');
+              button.type = 'button';
+              button.dataset.key = id;
+              button.textContent = label;
+              button.setAttribute('aria-label', id === 'ctrl' ? 'Ctrl (sticky)' : label);
+              button.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (id === 'ctrl') {
+                  armed = !armed;
+                  renderArmed();
+                  return;
+                }
+                dispatch(host, key, code, keyCode, false);
+              });
+              next.appendChild(button);
+            }
+            return next;
+          };
+
+          const onKeyDown = (event) => {
+            if (!armed) return;
+            const area = event.target;
+            if (!(area instanceof HTMLTextAreaElement)) return;
+            if (!area.classList.contains('xterm-helper-textarea')) return;
+            armed = false;
+            renderArmed();
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            area.dispatchEvent(makeKey({ key: event.key, code: event.code, ctrlKey: true }, event.keyCode));
+          };
+
+          const sync = () => {
+            const mobile = root.hasAttribute('data-dsh-mobile');
+            const host = document.querySelector('[data-sidebar-terminal]');
+            const visible = host !== null && host.getClientRects().length > 0;
+            if (!mobile || !visible) {
+              if (bar !== null) {
+                bar.remove();
+                bar = null;
+                armed = false;
+              }
+              return;
+            }
+            if (bar !== null && host.contains(bar)) return;
+            if (bar !== null) bar.remove();
+            bar = build(host);
+            host.appendChild(bar);
+            renderArmed();
+          };
+
+          timer = window.setInterval(sync, 500);
+          document.addEventListener('keydown', onKeyDown, true);
+          const query = window.matchMedia(MOBILE_QUERY);
+          query.addEventListener('change', sync);
+          sync();
+          return () => {
+            window.clearInterval(timer);
+            document.removeEventListener('keydown', onKeyDown, true);
+            query.removeEventListener('change', sync);
+            if (bar !== null) bar.remove();
+          };
+        }, 'dsh-mobile-ui: terminal keys');
+
+        // ---- touch reorder ------------------------------------------------
+        // HTML5 drag-and-drop does not follow a finger (iOS Safari has no
+        // native drag). A long press on a shipped draggable handle replays the
+        // drag protocol as synthetic DragEvents, so the shipped reorder
+        // handlers (model list, Session/Workspace list) run unchanged.
+        ctx.effect(() => {
+          const root = document.documentElement;
+          const dragSupported = typeof DragEvent !== 'undefined' && typeof DataTransfer !== 'undefined';
+          let hold = null;
+          let source = null;
+          let transfer = null;
+          let active = false;
+          let startX = 0;
+          let startY = 0;
+          let suppressClickUntil = 0;
+
+          const cleanup = () => {
+            if (hold !== null) {
+              window.clearTimeout(hold);
+              hold = null;
+            }
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp, true);
+            window.removeEventListener('pointercancel', onCancel, true);
+            window.removeEventListener('touchmove', onTouchMove);
+            source = null;
+            transfer = null;
+            active = false;
+          };
+
+          const makeDrag = (type, event, node) => {
+            if (node === null || transfer === null) return;
+            try {
+              node.dispatchEvent(new DragEvent(type, {
+                bubbles: true,
+                cancelable: true,
+                dataTransfer: transfer,
+                clientX: event.clientX,
+                clientY: event.clientY,
+              }));
+            } catch {
+              // A browser without DataTransfer construction support disables
+              // touch reordering; everything else keeps working.
+            }
+          };
+
+          // A dropped item must not also count as a tap on the row.
+          const onClickCapture = (event) => {
+            if (Date.now() >= suppressClickUntil) return;
+            event.preventDefault();
+            event.stopPropagation();
+          };
+
+          const rowAt = (x, y) => {
+            const element = document.elementFromPoint(x, y);
+            if (!(element instanceof Element)) return null;
+            return element.closest('[data-row-key], [draggable="true"]');
+          };
+
+          const onTouchMove = (event) => {
+            if (active) event.preventDefault();
+          };
+
+          const onMove = (event) => {
+            if (!active) {
+              if (hold === null) return;
+              if (Math.hypot(event.clientX - startX, event.clientY - startY) > 8) cleanup();
+              return;
+            }
+            event.preventDefault();
+            const next = rowAt(event.clientX, event.clientY);
+            if (next === null) return;
+            makeDrag('dragenter', event, next);
+            makeDrag('dragover', event, next);
+          };
+
+          const onUp = (event) => {
+            if (!active) {
+              cleanup();
+              return;
+            }
+            const next = rowAt(event.clientX, event.clientY);
+            if (next !== null && next !== source) {
+              makeDrag('dragenter', event, next);
+              makeDrag('dragover', event, next);
+              makeDrag('drop', event, next);
+            }
+            if (source !== null) makeDrag('dragend', event, source);
+            suppressClickUntil = Date.now() + 500;
+            cleanup();
+          };
+
+          const onCancel = () => {
+            if (active) suppressClickUntil = Date.now() + 500;
+            if (active && source !== null && transfer !== null) {
+              source.dispatchEvent(new DragEvent('dragend', {
+                bubbles: true,
+                cancelable: true,
+                dataTransfer: transfer,
+              }));
+            }
+            cleanup();
+          };
+
+          const onPointerDown = (event) => {
+            if (!dragSupported || !root.hasAttribute('data-dsh-mobile')) return;
+            if (event.pointerType === 'mouse') return;
+            const element = event.target;
+            if (!(element instanceof Element)) return;
+            if (element.closest('input, textarea, [contenteditable="true"]')) return;
+            if (element.closest('[data-conversation-region="composer"]')) return;
+            const handle = element.closest('[draggable="true"]');
+            if (handle === null) return;
+            startX = event.clientX;
+            startY = event.clientY;
+            source = handle;
+            hold = window.setTimeout(() => {
+              hold = null;
+              try {
+                transfer = new DataTransfer();
+              } catch {
+                cleanup();
+                return;
+              }
+              active = true;
+              window.addEventListener('pointermove', onMove, { passive: false });
+              window.addEventListener('pointerup', onUp, true);
+              window.addEventListener('pointercancel', onCancel, true);
+              window.addEventListener('touchmove', onTouchMove, { passive: false });
+              makeDrag('dragstart', event, handle);
+            }, 450);
+          };
+
+          document.addEventListener('pointerdown', onPointerDown, true);
+          document.addEventListener('click', onClickCapture, true);
+          return () => {
+            document.removeEventListener('pointerdown', onPointerDown, true);
+            document.removeEventListener('click', onClickCapture, true);
+            cleanup();
+          };
+        }, 'dsh-mobile-ui: touch reorder');
 
         // ---- header navigation seat ---------------------------------------
         ctx.slots.inject('conversation.header.leading', () =>
