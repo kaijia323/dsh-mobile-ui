@@ -299,6 +299,26 @@ html[data-dsh-mobile] [data-conversation-region="composer"] button {
     min-height: 36px;
   }
 
+  /* The bordered "open with file manager" split control is a compact 24px
+     chip by design. The 36px touch height above makes its button taller than
+     the chip, so the icon clips and the box drifts off the row's centre line.
+     Exempt the chip and let the button fill it. */
+  html[data-dsh-mobile] [data-slot="conversation.header"] [data-open-target="directory"] {
+    width: 24px !important;
+    height: 24px !important;
+    min-height: 24px !important;
+  }
+
+  html[data-dsh-mobile] [data-slot="conversation.header"] [data-open-target="directory"] > button {
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    justify-content: center !important;
+  }
+
   /* The composer's round controls keep a square box, otherwise a min-height
      rule turns them into ovals. */
   html[data-dsh-mobile] [data-conversation-region="composer"] .uV2eYG_add,
