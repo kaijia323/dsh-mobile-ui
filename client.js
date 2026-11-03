@@ -966,43 +966,63 @@ html[data-dsh-mobile] [data-dsh-mobile-keys] button[data-armed] {
 
         // ---- touch reorder ------------------------------------------------
         // HTML5 drag-and-drop does not follow a finger (iOS Safari has no
-        // native drag). A long press on a shipped draggable handle replays the
-        // drag protocol as synthetic DragEvents, so the shipped reorder
-        // handlers (model list, Session/Workspace list) run unchanged.
+        // native drag). A stationary long press on a shipped draggable handle
+        // replays the drag protocol as synthetic DragEvents, so the shipped
+        // reorder handlers (model list, Session/Workspace list) run unchanged.
+        //
+        // The press must never fight the list's own scrolling. A finger that
+        // travels before the hold elapses is a pan; a press that ends early is
+        // a tap. Both cancel the timer, so the drag only exists after a
+        // motionless hold. Without that, a scroll that starts on a row (most of
+        // them do) is read as a reorder, and a tap leaves its timer armed: the
+        // timer fires a phantom drag 450 ms later and the next tap's click is
+        // swallowed by the drag's click guard.
         ctx.effect(() => {
           const root = document.documentElement;
           const dragSupported = typeof DragEvent !== 'undefined' && typeof DataTransfer !== 'undefined';
+          const HOLD_MS = 450;
+          // Travel that proves the gesture is a pan, not a hold. Small enough
+          // to beat the scroll, large enough to ignore finger jitter.
+          const SLOP = 8;
           let hold = null;
           let source = null;
           let transfer = null;
           let active = false;
           let startX = 0;
           let startY = 0;
+          let moved = false;
           let suppressClickUntil = 0;
 
-          const cleanup = () => {
+          const clearHold = () => {
             if (hold !== null) {
               window.clearTimeout(hold);
               hold = null;
             }
-            window.removeEventListener('pointermove', onMove);
+          };
+
+          const cleanup = () => {
+            clearHold();
+            window.removeEventListener('pointermove', onMove, true);
             window.removeEventListener('pointerup', onUp, true);
             window.removeEventListener('pointercancel', onCancel, true);
-            window.removeEventListener('touchmove', onTouchMove);
+            window.removeEventListener('touchmove', onTouchMoveProbe, true);
+            window.removeEventListener('touchmove', onTouchMoveActive, true);
+            window.removeEventListener('scroll', onScroll, true);
             source = null;
             transfer = null;
             active = false;
+            moved = false;
           };
 
-          const makeDrag = (type, event, node) => {
+          const makeDrag = (type, point, node) => {
             if (node === null || transfer === null) return;
             try {
               node.dispatchEvent(new DragEvent(type, {
                 bubbles: true,
                 cancelable: true,
                 dataTransfer: transfer,
-                clientX: event.clientX,
-                clientY: event.clientY,
+                clientX: point.clientX,
+                clientY: point.clientY,
               }));
             } catch {
               // A browser without DataTransfer construction support disables
@@ -1023,16 +1043,32 @@ html[data-dsh-mobile] [data-dsh-mobile-keys] button[data-armed] {
             return element.closest('[data-row-key], [draggable="true"]');
           };
 
-          const onTouchMove = (event) => {
+          const travelled = (x, y) => Math.hypot(x - startX, y - startY) > SLOP;
+
+          // Passive probe: touchmove keeps firing while the list scrolls, so
+          // this is the earliest reliable "the finger is panning" signal.
+          const onTouchMoveProbe = (event) => {
+            const touch = event.touches[0];
+            if (touch !== undefined && travelled(touch.clientX, touch.clientY)) cleanup();
+          };
+
+          const onTouchMoveActive = (event) => {
             if (active) event.preventDefault();
+          };
+
+          // The list scrolled under the press (momentum, another finger, a
+          // programmatic scroll): this gesture belongs to the list.
+          const onScroll = () => {
+            if (hold !== null) cleanup();
           };
 
           const onMove = (event) => {
             if (!active) {
               if (hold === null) return;
-              if (Math.hypot(event.clientX - startX, event.clientY - startY) > 8) cleanup();
+              if (travelled(event.clientX, event.clientY)) cleanup();
               return;
             }
+            if (travelled(event.clientX, event.clientY)) moved = true;
             event.preventDefault();
             const next = rowAt(event.clientX, event.clientY);
             if (next === null) return;
@@ -1042,6 +1078,9 @@ html[data-dsh-mobile] [data-dsh-mobile-keys] button[data-armed] {
 
           const onUp = (event) => {
             if (!active) {
+              // The press ended before the hold: a tap (or a pan already
+              // cancelled by a move). Drop the timer so it can never fire a
+              // drag after the finger is gone.
               cleanup();
               return;
             }
@@ -1052,12 +1091,15 @@ html[data-dsh-mobile] [data-dsh-mobile-keys] button[data-armed] {
               makeDrag('drop', event, next);
             }
             if (source !== null) makeDrag('dragend', event, source);
-            suppressClickUntil = Date.now() + 500;
+            // Only a press that actually became a drag suppresses its click.
+            // The next pointerdown clears the window, so a fresh tap can never
+            // be swallowed by the previous drag.
+            if (moved) suppressClickUntil = Date.now() + 500;
             cleanup();
           };
 
           const onCancel = () => {
-            if (active) suppressClickUntil = Date.now() + 500;
+            if (active && moved) suppressClickUntil = Date.now() + 500;
             if (active && source !== null && transfer !== null) {
               source.dispatchEvent(new DragEvent('dragend', {
                 bubbles: true,
@@ -1068,33 +1110,50 @@ html[data-dsh-mobile] [data-dsh-mobile-keys] button[data-armed] {
             cleanup();
           };
 
+          const activate = () => {
+            hold = null;
+            if (source === null || !source.isConnected) {
+              cleanup();
+              return;
+            }
+            try {
+              transfer = new DataTransfer();
+            } catch {
+              cleanup();
+              return;
+            }
+            active = true;
+            const point = { clientX: startX, clientY: startY };
+            window.removeEventListener('touchmove', onTouchMoveProbe, true);
+            window.addEventListener('touchmove', onTouchMoveActive, { passive: false, capture: true });
+            makeDrag('dragstart', point, source);
+          };
+
           const onPointerDown = (event) => {
-            if (!dragSupported || !root.hasAttribute('data-dsh-mobile')) return;
+            // A new press owns its own click, whatever the previous gesture left.
+            suppressClickUntil = 0;
+            if (!dragSupported) return;
             if (event.pointerType === 'mouse') return;
+            if (!root.hasAttribute('data-dsh-mobile')) return;
             const element = event.target;
             if (!(element instanceof Element)) return;
             if (element.closest('input, textarea, [contenteditable="true"]')) return;
             if (element.closest('[data-conversation-region="composer"]')) return;
             const handle = element.closest('[draggable="true"]');
             if (handle === null) return;
+            if (active || hold !== null) cleanup();
             startX = event.clientX;
             startY = event.clientY;
+            moved = false;
             source = handle;
-            hold = window.setTimeout(() => {
-              hold = null;
-              try {
-                transfer = new DataTransfer();
-              } catch {
-                cleanup();
-                return;
-              }
-              active = true;
-              window.addEventListener('pointermove', onMove, { passive: false });
-              window.addEventListener('pointerup', onUp, true);
-              window.addEventListener('pointercancel', onCancel, true);
-              window.addEventListener('touchmove', onTouchMove, { passive: false });
-              makeDrag('dragstart', event, handle);
-            }, 450);
+            // Listen from the first frame: an early move must be able to cancel
+            // the hold before the timer fires.
+            window.addEventListener('pointermove', onMove, true);
+            window.addEventListener('pointerup', onUp, true);
+            window.addEventListener('pointercancel', onCancel, true);
+            window.addEventListener('touchmove', onTouchMoveProbe, { passive: true, capture: true });
+            window.addEventListener('scroll', onScroll, true);
+            hold = window.setTimeout(activate, HOLD_MS);
           };
 
           document.addEventListener('pointerdown', onPointerDown, true);
