@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Mobile Web UI",
-    "description": "Mobile shell for the Web GUI: overlay drawer navigation, touch-sized chrome, safe areas and a full-width conversation."
+    "description": "Mobile polish for DSH Web: safe areas, touch sizing, no iOS input zoom, terminal keys and long-press reordering."
   }
 }

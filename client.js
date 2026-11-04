@@ -1,51 +1,42 @@
 /**
  * Mobile patch layer for the Harness Web GUI (browser half).
  *
- * Targets DSH Web 0.2.2+: the shipped shell already handles the phone-sized
- * settings panel, touch row actions, composer keyboard focus and the
- * full-screen right panel. This layer only adds what is still missing:
- * - the 56px rail becomes an overlay drawer;
- * - safe-area padding for the chrome the shipped shell leaves unpadded;
- * - 16px text fields (no iOS focus zoom), swipeable right-panel tabs,
- *   a terminal key row, a full-screen trajectory detail sheet, and long-press
- *   reordering for the shipped HTML5 drag handles;
- * - reading typography and touch target minimums.
+ * Targets DSH Web 0.2.2-alpha.3+. That release ships the phone navigation this
+ * layer used to draw itself: the overlay drawer below 768px, its opener in the
+ * frame leading seat, the mask, the Escape / Session / panel dismissal and the
+ * global-panel top inset. The old custom drawer, header hamburger and panel
+ * bottom bar are therefore gone — a second drawer only fought the shipped one.
+ *
+ * What remains are the gaps the shipped chrome still leaves:
+ * - safe-area padding for the drawer, conversation header, global panels,
+ *   composer, modals, toasts, the right panel strip, the settings panel and
+ *   the trajectory sheet;
+ * - reading typography, 16px text fields (no iOS focus zoom) and touch-sized
+ *   chrome;
+ * - a compact running-jobs pill and subagent counter, so the header keeps a
+ *   usable title on a phone;
+ * - swipeable right-panel tabs, a terminal key row, and long-press reordering
+ *   for the shipped HTML5 drag handles.
  *
  * Everything is additive and gated by `html[data-dsh-mobile]`; a desktop
- * viewport never receives the attribute. `?dsh-mobile=off` disables the
- * layer for one load.
+ * viewport never receives the attribute. `?dsh-mobile=off` disables the layer
+ * for one load.
  */
 window.__ModuleLoader__.load({
   id: 'dsh-mobile-ui',
-  factory(require) {
-    const React = require('react');
-    const h = React.createElement;
-
-    const NS = 'dsh-mobile-ui';
+  factory() {
     const STYLE_ID = 'dsh-mobile-ui/styles';
     const MOBILE_QUERY = '(max-width: 767px)';
-    const FRAME_SELECTOR =
-      '#root > [data-slot="root"] > div:has(> [data-shell-overlay])';
-
-    const FALLBACKS = {
-      openNavigation: 'Open navigation',
-      backToConversation: 'Back to chat',
-    };
-
-    const DICTS = {
-      zh: { openNavigation: '打开导航', backToConversation: '回到对话' },
-      en: { openNavigation: 'Open navigation', backToConversation: 'Back to chat' },
-    };
 
     const CSS = `
 /* ============================================================
-   Mobile web shell for DSH Web (0.2.2+).
+   Mobile web shell for DSH Web (0.2.2-alpha.3+).
 
    Every rule is additive and gated by html[data-dsh-mobile]: a desktop
-   viewport never receives that attribute. Features the shipped shell
-   already handles on phones (full-screen settings, touch row actions,
-   the composer keyboard policy, the full-screen right panel) are left
-   alone on purpose. \`?dsh-mobile=off\` disables the layer for one load.
+   viewport never receives that attribute. The shipped shell owns the phone
+   drawer and its dismissal; this layer owns the safe areas the shipped chrome
+   still leaves to the browser edge, plus a few dense phone affordances.
+   \`?dsh-mobile=off\` disables the layer for one load.
    ============================================================ */
 
 html[data-dsh-mobile] {
@@ -61,163 +52,49 @@ html[data-dsh-mobile] body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ---- frame ---------------------------------------------------
-   The 56px rail leaves the grid, so the conversation owns the width. */
-html[data-dsh-mobile] #root > [data-slot="root"] > div:has(> [data-shell-overlay]) {
-  grid-template-columns: 0 minmax(0, 1fr) 0 !important;
-  transition: none !important;
-}
-
-/* Grid children keep explicit seats once the rail leaves the flow. */
-html[data-dsh-mobile] #root > [data-slot="root"] > div:has(> [data-shell-overlay]) > div:has(> [data-slot="main"]) {
-  grid-column: 2;
-  grid-row: 1;
-}
-
-html[data-dsh-mobile] #root > [data-slot="root"] > div:has(> [data-shell-overlay]) > div[data-rightbar-col] {
-  grid-column: 3;
-  grid-row: 1;
-}
-
-/* ---- drawer -------------------------------------------------- */
-html[data-dsh-mobile] #root > [data-slot="root"] > div > div:has(> [data-slot="sidebar"]) {
-  position: fixed !important;
-  top: 0;
-  left: 0;
-  width: min(84vw, 320px) !important;
-  height: 100% !important;
+/* ---- safe areas: frame chrome --------------------------------
+   The shipped phone drawer (below 768px) is a full-height sheet flush with
+   the left edge; its content clears the notch and the home indicator. */
+html[data-dsh-mobile] [data-sidebar-drawer] > div:has(> [data-slot="sidebar"]) {
   box-sizing: border-box;
-  z-index: 60;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
-  border-radius: 0 16px 16px 0;
-  box-shadow: 0 18px 56px rgba(15, 17, 21, 0.26);
-  transform: translateX(-104%);
-  visibility: hidden;
-  transition: transform 260ms cubic-bezier(0.32, 0.72, 0, 1), visibility 260ms;
-  will-change: transform;
 }
 
-html[data-dsh-mobile] #root > [data-slot="root"] > div:not([data-sidebar-collapsed]) > div:has(> [data-slot="sidebar"]) {
-  transform: translateX(0);
-  visibility: visible;
+/* The sidebar component writes its own inline width; clamp it to the inset
+   content box so a landscape notch cannot clip its trailing controls. */
+html[data-dsh-mobile] [data-sidebar-drawer] > div:has(> [data-slot="sidebar"]) [data-slot="sidebar"] > * {
+  max-width: 100%;
 }
 
-/* Dimmed backdrop under the open drawer. */
-html[data-dsh-mobile] #root > [data-slot="root"] > div:not([data-sidebar-collapsed]) > div:has(> [data-slot="main"])::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 55;
-  background: rgba(15, 17, 21, 0.36);
+/* The shipped opener sits in the frame leading seat at 12/11. */
+html[data-dsh-mobile]:not([data-platform]):not([data-windows-titlebar]) [data-sidebar-drawer] [data-shell-leading] {
+  top: calc(11px + env(safe-area-inset-top));
+  left: calc(12px + env(safe-area-inset-left));
 }
 
-/* ---- header -------------------------------------------------- */
+/* The conversation title row derives its inset from the same variable that
+   publishes the opener's leading clearance (48px on Web). */
+html[data-dsh-mobile]:not([data-platform]):not([data-windows-titlebar]) [data-sidebar-drawer] {
+  --dsh-frame-leading-clearance: calc(48px + env(safe-area-inset-left)) !important;
+}
+
+/* Conversation header: shipped 10px top inset, 20px leading / 28px trailing. */
 html[data-dsh-mobile] [data-slot="conversation.header"] > header {
-  padding-top: calc(8px + env(safe-area-inset-top)) !important;
-  padding-left: max(8px, env(safe-area-inset-left)) !important;
-  /* The far-right seat overhangs the content box on purpose; this keeps the
-     right-panel control inside the viewport instead of clipping it. */
-  padding-right: max(20px, env(safe-area-inset-right)) !important;
-  flex-wrap: nowrap !important;
-  align-items: center !important;
-  min-height: 44px;
+  padding-top: calc(10px + env(safe-area-inset-top));
+  padding-left: max(20px, env(safe-area-inset-left));
+  padding-right: max(28px, env(safe-area-inset-right));
 }
 
-html[data-dsh-mobile] [data-slot="conversation.header"] > header > div {
-  min-width: 0;
-}
-
-html[data-dsh-mobile] [data-slot="conversation.header"] > header > div > div {
-  flex-wrap: nowrap !important;
-}
-
-/* The session/title column gives up width first instead of pushing actions out.
-   Anchored to the shipped session-header slot rather than a child index. */
-html[data-dsh-mobile] [data-slot="conversation.header"] > header > [data-slot="conversation.session.header"] {
-  flex: 1 1 auto !important;
-  min-width: 0;
-  overflow: hidden;
-}
-
-/* Action labels truncate instead of widening the bar. */
-html[data-dsh-mobile] [data-slot="conversation.header"] > header button > span {
-  max-width: 96px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-html[data-dsh-mobile] [data-slot="conversation.header"] button[aria-label*="后台任务"] > span,
-html[data-dsh-mobile] [data-slot="conversation.header"] button[aria-label*="background job"] > span {
-  max-width: 72px;
-}
-
-/* The leading seat's drawer button. */
-html[data-dsh-mobile] [data-dsh-mobile-nav] {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 34px;
-  height: 34px;
-  margin-right: 2px;
-  padding: 0;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--dsw-alias-label-primary);
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-html[data-dsh-mobile] [data-dsh-mobile-nav]:active {
-  background: var(--dsw-alias-bg-layer-2);
-}
-
-/* ---- navigation bar for global panels ------------------------ */
-html[data-dsh-mobile] [data-dsh-mobile-panel-bar] {
-  display: none;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  height: calc(52px + env(safe-area-inset-bottom));
-  padding: 0 8px env(safe-area-inset-bottom);
+/* Global panels (Plugins, Automation) pad 48px for the shipped frame chrome;
+   add the notch / home-indicator insets on top of it. */
+html[data-dsh-mobile]:not([data-platform]):not([data-windows-titlebar]) [data-sidebar-drawer] [data-global-panel] {
   box-sizing: border-box;
-  border-top: 0.5px solid var(--dsw-alias-border-l1);
-  background: var(--dsw-specific-sidebar-fill);
-  pointer-events: auto;
-}
-
-/* A main panel that is not the conversation owns the view. */
-html[data-dsh-mobile]:has([data-slot="main"] > *:not([data-slot="main.conversation"])) [data-dsh-mobile-panel-bar] {
-  display: flex;
-}
-
-html[data-dsh-mobile] #root > [data-slot="root"] > div:not([data-sidebar-collapsed]) [data-dsh-mobile-panel-bar] {
-  display: none;
-}
-
-html[data-dsh-mobile] [data-dsh-mobile-panel-bar] button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 40px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  color: var(--dsw-alias-label-primary);
-  font-size: 14px;
-  font-weight: 500;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-html[data-dsh-mobile] [data-dsh-mobile-panel-bar] button:active {
-  background: var(--dsw-alias-bg-layer-2);
+  padding-top: calc(48px + env(safe-area-inset-top)) !important;
+  padding-bottom: env(safe-area-inset-bottom) !important;
+  padding-left: env(safe-area-inset-left) !important;
+  padding-right: env(safe-area-inset-right) !important;
 }
 
 /* ---- composer / reading -------------------------------------- */
@@ -225,9 +102,13 @@ html[data-dsh-mobile] [data-composer-seat] {
   padding-bottom: calc(6px + env(safe-area-inset-bottom));
 }
 
-html[data-dsh-mobile] [data-conversation-region="composer"] [contenteditable="true"] {
-  font-size: 16px !important;
-  line-height: 24px !important;
+/* iOS zooms a focused field below 16px; a fine pointer never does, so the
+   composer keeps its shipped type on a narrow desktop window. */
+@media (pointer: coarse) {
+  html[data-dsh-mobile] [data-conversation-region="composer"] [contenteditable="true"] {
+    font-size: 16px !important;
+    line-height: 24px !important;
+  }
 }
 
 html[data-dsh-mobile] [data-conversation-region="composer"] button {
@@ -314,7 +195,20 @@ html[data-dsh-mobile] .ZKlsPq_trigger > span {
   display: none !important;
 }
 
-/* ---- safe areas for the shipped chrome ----------------------- */
+/* Header action labels truncate instead of widening the bar. */
+html[data-dsh-mobile] [data-slot="conversation.header"] button > span {
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-dsh-mobile] [data-slot="conversation.header"] button[aria-label*="后台任务"] > span,
+html[data-dsh-mobile] [data-slot="conversation.header"] button[aria-label*="background job"] > span {
+  max-width: 72px;
+}
+
+/* ---- safe areas for shipped overlays ------------------------- */
 /* Modal layer: keep dialogs off the notch and the home indicator. */
 html[data-dsh-mobile] div:has(> [role="dialog"][aria-modal="true"]):not(:has(> .VOzbGW_panel)) {
   padding-top: max(16px, env(safe-area-inset-top)) !important;
@@ -337,9 +231,11 @@ html[data-dsh-mobile] [class*="_toast_"] {
   max-width: min(640px, calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right))) !important;
 }
 
-/* Right panel: full-screen strip clears the notch and the home indicator. */
+/* Right panel: the full-screen strip clears the notch and the home indicator. */
 html[data-dsh-mobile] [data-dockkit-strip] {
   padding-top: calc(10px + env(safe-area-inset-top)) !important;
+  padding-left: calc(10px + env(safe-area-inset-left)) !important;
+  padding-right: calc(6px + env(safe-area-inset-right)) !important;
 }
 
 html[data-dsh-mobile] [data-sidebar-right-session] [data-dockkit-pane] {
@@ -351,14 +247,19 @@ html[data-dsh-mobile] .VOzbGW_panel {
   box-sizing: border-box !important;
   padding-top: env(safe-area-inset-top) !important;
   padding-bottom: env(safe-area-inset-bottom) !important;
+  padding-left: env(safe-area-inset-left) !important;
+  padding-right: env(safe-area-inset-right) !important;
 }
 
 /* ---- touch typing -------------------------------------------- */
 /* iOS zooms any focused text field below 16px. Force the minimum once, for
-   every field; the shipped 16px overrides stay valid. */
-html[data-dsh-mobile] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="file"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
-html[data-dsh-mobile] textarea {
-  font-size: 16px !important;
+   every field on a touch pointer; the shipped 16px overrides stay valid and a
+   fine pointer keeps its shipped 13px type. */
+@media (pointer: coarse) {
+  html[data-dsh-mobile] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="file"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+  html[data-dsh-mobile] textarea {
+    font-size: 16px !important;
+  }
 }
 
 /* ---- right-panel tab strip ----------------------------------- */
@@ -385,12 +286,14 @@ html[data-dsh-mobile] [data-dockkit-strip] [data-dockkit-tab-close] {
 }
 
 /* ---- trajectory: the shipped 92% sheet, plus safe-area padding ---- */
-/* DSH 0.2.2 already turns the event details into a 92%-wide overlay below
-   760px; layout stays official, only the notch/home-indicator padding is ours. */
+/* DSH turns the event details into a 92%-wide overlay below 760px; layout
+   stays official, only the notch/home-indicator padding is ours. */
 html[data-dsh-mobile] .Y0dWHa_details {
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 /* ---- terminal: phone key bar -------------------------------- */
@@ -443,7 +346,9 @@ html[data-dsh-mobile] [data-dsh-mobile-keys] button[data-armed] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html[data-dsh-mobile] #root > [data-slot="root"] > div > div:has(> [data-slot="sidebar"]) {
+  html[data-dsh-mobile] [data-sidebar-drawer] > div:has(> [data-slot="sidebar"]) {
+    /* The shipped drawer still animates; this only keeps our padding from
+       participating in any transition. */
     transition: none;
   }
 }
@@ -466,147 +371,10 @@ html[data-dsh-mobile] [data-dsh-mobile-keys] button[data-armed] {
       return window.matchMedia(MOBILE_QUERY).matches;
     }
 
-    /** @returns {HTMLElement | null} */
-    function frame() {
-      return document.querySelector(FRAME_SELECTOR);
-    }
-
-    /** @returns {boolean} */
-    function drawerOpen() {
-      const node = frame();
-      return node !== null && !node.hasAttribute('data-sidebar-collapsed');
-    }
-
-    /**
-     * Reactive "this viewport wants the mobile shell" flag.
-     * @returns {boolean}
-     */
-    function useMobileFlag() {
-      const [mobile, setMobile] = React.useState(
-        () => !isDisabled() && matchesMobile(),
-      );
-      React.useEffect(() => {
-        const query = window.matchMedia(MOBILE_QUERY);
-        const update = () => setMobile(!isDisabled() && query.matches);
-        query.addEventListener('change', update);
-        return () => query.removeEventListener('change', update);
-      }, []);
-      return mobile;
-    }
-
-    /**
-     * The navigation glyph shared by both drawer triggers.
-     */
-    function NavigationGlyph() {
-      return h(
-        'svg',
-        {
-          width: 20,
-          height: 20,
-          viewBox: '0 0 20 20',
-          fill: 'none',
-          stroke: 'currentColor',
-          strokeWidth: 1.8,
-          strokeLinecap: 'round',
-          'aria-hidden': 'true',
-        },
-        h('path', { d: 'M3.5 5.5h13' }),
-        h('path', { d: 'M3.5 10h9.5' }),
-        h('path', { d: 'M3.5 14.5h13' }),
-      );
-    }
-
-    /**
-     * The leading header button that opens the navigation drawer.
-     * Renders nothing outside a phone-sized viewport, so the desktop header
-     * keeps its shipped composition.
-     */
-    function NavigationButton(props) {
-      const mobile = useMobileFlag();
-      if (!mobile) return null;
-      return h(
-        'button',
-        {
-          type: 'button',
-          'data-dsh-mobile-nav': '',
-          'aria-label': props.label,
-          title: props.label,
-          onClick: (event) => {
-            event.stopPropagation();
-            props.onToggle();
-          },
-        },
-        h(NavigationGlyph),
-      );
-    }
-
-    /**
-     * Global panels (Plugins, Automation tasks) replace the conversation
-     * header, so they keep a bottom bar with the way back to the drawer.
-     * Visibility is CSS-driven from the selected main panel.
-     */
-    function PanelNavigationBar(props) {
-      const mobile = useMobileFlag();
-      if (!mobile) return null;
-      return h(
-        'div',
-        { 'data-dsh-mobile-panel-bar': '' },
-        h(
-          'button',
-          {
-            type: 'button',
-            'data-dsh-mobile-panel-nav': '',
-            'aria-label': props.navigationLabel,
-            onClick: (event) => {
-              event.stopPropagation();
-              props.onOpenDrawer();
-            },
-          },
-          h(NavigationGlyph),
-          h('span', null, props.navigationLabel),
-        ),
-        h(
-          'button',
-          {
-            type: 'button',
-            'data-dsh-mobile-panel-back': '',
-            'aria-label': props.backLabel,
-            onClick: (event) => {
-              event.stopPropagation();
-              props.onBackToConversation();
-            },
-          },
-          h('span', null, props.backLabel),
-        ),
-      );
-    }
-
     return {
-      inject: ['slots', 'layout', 'locale'],
+      inject: [],
 
       apply(ctx) {
-        // ---- locale -------------------------------------------------------
-        for (const locale of Object.keys(DICTS)) {
-          try {
-            ctx.effect(
-              () => ctx.locale.register(NS, locale, DICTS[locale]),
-              'dsh-mobile-ui: locale ' + locale,
-            );
-          } catch {
-            // A missing dictionary only costs a fallback string.
-          }
-        }
-
-        const translate = (key) => {
-          try {
-            const value = ctx.locale.bind(NS)(key);
-            if (typeof value === 'string' && value !== key) return value;
-          } catch {
-            // fall through to the literal
-          }
-          return FALLBACKS[key] || key;
-        };
-
         // ---- stylesheet ---------------------------------------------------
         ctx.effect(() => {
           const style = document.createElement('style');
@@ -634,124 +402,6 @@ html[data-dsh-mobile] [data-dsh-mobile-keys] button[data-armed] {
             root.removeAttribute('data-dsh-mobile');
           };
         }, 'dsh-mobile-ui: viewport flag');
-
-
-        // ---- drawer dismissal --------------------------------------------
-        // The drawer stays open for in-place interactions (search, menus,
-        // workspace dialogs) and closes when a tap lands outside it or when
-        // navigation actually happens: another Session or another main panel.
-        ctx.effect(() => {
-          const root = document.documentElement;
-          const isMobile = () => root.hasAttribute('data-dsh-mobile');
-          const closeDrawer = () => {
-            // Observers below fire on desktop too: a Session load or a main-panel
-            // switch must not collapse the desktop sidebar, only a phone drawer.
-            if (!isMobile() || !drawerOpen()) return;
-            ctx.layout.toggleSidebar();
-          };
-
-          const onClick = (event) => {
-            if (!isMobile() || !drawerOpen()) return;
-            const target = event.target;
-            if (!(target instanceof Element)) return;
-            if (target.closest('[data-dsh-mobile-nav], [data-dsh-mobile-panel-nav]')) return;
-            // Picking a Session row is navigation even when it is already open;
-            // workspace rows only expand or collapse and keep the drawer.
-            // Controls inside the row (the "..." menu, hover actions) are
-            // in-place actions: keep the drawer so their menu stays in context.
-            if (target.closest('[data-slot="sidebar.workspaces"] [data-row-key^="session:"]')) {
-              if (target.closest('button')) return;
-              window.setTimeout(closeDrawer, 0);
-              return;
-            }
-            // Menu items render in a body portal; acting on one is still an
-            // in-place operation, so the list stays where the user left it.
-            if (target.closest('[role="menu"]')) return;
-            if (target.closest('[data-slot="sidebar"]')) {
-              // Only a button press navigates: brand / New Session / panel rows
-              // collapse the drawer immediately. Text and blank areas inside the
-              // drawer (workspace rows, search field, empty space) are in-place
-              // interactions and keep it.
-              const button = target.closest('button');
-              if (
-                button !== null &&
-                button.closest(
-                  '[data-slot="sidebar.workspaces"], [data-slot="sidebar.settings"], [data-slot="sidebar.footer.action"]',
-                ) === null
-              ) {
-                window.setTimeout(closeDrawer, 0);
-              }
-              return;
-            }
-            window.setTimeout(closeDrawer, 0);
-          };
-
-          const onKeyDown = (event) => {
-            if (event.key !== 'Escape' || !isMobile()) return;
-            // Esc closes an open popover first; the drawer stays behind it.
-            if (document.querySelector('[role="menu"], [role="listbox"]')) return;
-            closeDrawer();
-          };
-
-          // A Session switch (including the blank New Session state) closes it.
-          const sessionObserver = new MutationObserver(closeDrawer);
-          sessionObserver.observe(document.body, {
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['data-conversation-session'],
-          });
-
-          // A main-panel switch (Plugins, Automation tasks) closes it too.
-          let panelObserver = null;
-          let observedPanel = null;
-          const attachPanelObserver = () => {
-            const slot = document.querySelector('[data-slot="main"]');
-            if (slot === observedPanel) return;
-            if (panelObserver) panelObserver.disconnect();
-            observedPanel = slot;
-            if (!slot) return;
-            panelObserver = new MutationObserver(closeDrawer);
-            panelObserver.observe(slot, { childList: true });
-          };
-          const bodyObserver = new MutationObserver(attachPanelObserver);
-          bodyObserver.observe(document.body, { childList: true });
-          attachPanelObserver();
-
-          document.addEventListener('click', onClick, true);
-          // Capture phase: the shipped menu closes on Escape from its own React
-          // handler, so the menu must still be visible when we inspect it.
-          document.addEventListener('keydown', onKeyDown, true);
-          return () => {
-            document.removeEventListener('click', onClick, true);
-            document.removeEventListener('keydown', onKeyDown, true);
-            sessionObserver.disconnect();
-            if (panelObserver) panelObserver.disconnect();
-            bodyObserver.disconnect();
-          };
-        }, 'dsh-mobile-ui: drawer dismissal');
-
-        // ---- drawer closes on a new Session -------------------------------
-        // Creating a Session swaps the conversation DOM node, so the attribute
-        // observer above sees no mutation. While the drawer is open, watch the
-        // conversation identity directly and close once it changes.
-        ctx.effect(() => {
-          const root = document.documentElement;
-          let lastSession = null;
-          const readSession = () => {
-            const node = document.querySelector('[data-conversation-session]');
-            return node ? node.getAttribute('data-conversation-session') : null;
-          };
-          const timer = window.setInterval(() => {
-            const current = readSession();
-            const mobile = root.hasAttribute('data-dsh-mobile');
-            if (mobile && drawerOpen() && current !== lastSession) {
-              ctx.layout.toggleSidebar();
-            }
-            lastSession = current;
-          }, 120);
-          return () => window.clearInterval(timer);
-        }, 'dsh-mobile-ui: new-session drawer close');
-
 
         // ---- compact running-jobs pill ------------------------------------
         // The shipped pill label is a sentence ("2 个后台任务运行中") and, on a
@@ -1164,33 +814,6 @@ html[data-dsh-mobile] [data-dsh-mobile-keys] button[data-armed] {
             cleanup();
           };
         }, 'dsh-mobile-ui: touch reorder');
-
-        // ---- header navigation seat ---------------------------------------
-        ctx.slots.inject('conversation.header.leading', () =>
-          ctx.slots.register(
-            { name: 'conversation.header.leading' },
-            () =>
-              h(NavigationButton, {
-                label: translate('openNavigation'),
-                onToggle: () => ctx.layout.toggleSidebar(),
-              }),
-          ),
-        );
-
-        // ---- bottom navigation for global panels ---------------------------
-        ctx.slots.inject('shell.bottom', () =>
-          ctx.slots.register(
-            { name: 'shell.bottom' },
-            () =>
-              h(PanelNavigationBar, {
-                navigationLabel: translate('openNavigation'),
-                backLabel: translate('backToConversation'),
-                onOpenDrawer: () => ctx.layout.toggleSidebar(),
-                onBackToConversation: () => ctx.layout.selectPanel(null),
-              }),
-          ),
-        );
-
       },
     };
   },
