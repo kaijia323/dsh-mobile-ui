@@ -13,11 +13,11 @@
       "name": "dsh-mobile-ui",
       "title": {
         "en": "Mobile Web UI",
-        "zh": "移动端外壳"
+        "zh": "移动端界面"
       },
       "description": {
-        "en": "Mobile patch layer for DSH Web 0.2.2+: overlay drawer, safe areas, terminal key row and touch fixes; desktop stays unchanged.",
-        "zh": "DSH Web 0.2.2+ 的移动端补丁层：抽屉导航、安全区、终端按键条与触屏优化；桌面端保持不变。"
+        "en": "Mobile polish for DSH Web 0.2.2-alpha.3+: safe areas, touch sizing, dense header, terminal keys and long-press reordering; the drawer stays official.",
+        "zh": "DSH Web 0.2.2-alpha.3+ 的移动端细化层：安全区、触控尺寸、头栏密度、终端按键条与长按排序；抽屉使用官方实现。"
       },
       "icon": "icons/dsh-mobile-ui.svg",
       "author": "kaijia323",
@@ -26,6 +26,15 @@
         "url": "https://github.com/kaijia323/dsh-mobile-ui"
       },
       "versions": [
+        {
+          "version": "0.3.0",
+          "publishTimestamp": 1793763529,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/kaijia323/dsh-mobile-ui",
+            "commit": "44b16a40d3ddcc9a04a088cf7ab158c60be7c4e8"
+          }
+        },
         {
           "version": "0.2.2",
           "publishTimestamp": 1793675441,
