@@ -123,7 +123,8 @@ html[data-dsh-mobile] body {
 }
 
 /* Model selector: keep the name readable instead of collapsing to an icon
-   as early as the shipped measuring would. The version tag goes away. */
+   as early as the shipped measuring would. 0.2.2-rc.2 no longer renders a
+   version tag in this label; the data-tone rule stays for builds that do. */
 html[data-dsh-mobile] [data-conversation-region="composer"] ._7KE1Ra_trigger {
   max-width: min(360px, 60cqw) !important;
 }

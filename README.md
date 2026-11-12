@@ -35,15 +35,17 @@ DSH Web 的**移动端细化层**。从 DSH 0.2.2-alpha.3 起，官方已经接�
 
 ## 0.3.1：DSH 0.2.2-rc.2 适配
 
-rc.2 把子智能体计数器的图标从“触发器尾部的 chevron”改成了**图标包在
-`.ZKlsPq_activitySlot` span 里 + 数字包在 `.ZKlsPq_count` span 里**，并且用容器查询在
-窄容器（≤460px）只留图标。0.3.0 的 `.ZKlsPq_trigger > span { display: none }` 原本只想
-藏掉数字，结果把图标一起藏了：手机上这个 28px 触发器变成一块空白，看起来像“智能体团队
-的 icon 不见了”。0.3.1 不再碰这个触发器，紧凑形态完全交给官方。
+alpha.3 的触发器是「运行时的 activitySlot 圆点 + 数字 span + 尾部 chevron」；rc.2 改成
+「activitySlot 里放 users 图标（运行中再叠 spinner）+ 带 `data-subagent-count` 的数字
+span」，并新增容器查询在 ≤460px 只留图标。0.3.0 的 `.ZKlsPq_trigger > span { display: none }`
+原本只想藏数字（顺带藏了运行圆点），结果把 rc.2 的 users 图标一起藏了：手机上这个触发器
+变成一块空白，看起来像“智能体团队的 icon 不见了”。0.3.1 把触发器的宽高/隐藏规则全部删掉，
+紧凑形态交给官方；头栏按钮的通用触摸最小高度（36px）仍会作用到它。
 
 后台任务胶囊同理：rc.2 在图标外多了一层 `activitySlot` span，并把文字标成
-`data-job-count`。0.3.1 的数字改写改为优先锁定 `[data-job-count]`，旧版只有单个 span
-时再回退到 `> span`，所以 rc.2 和 alpha.3 的标题都能压成数字。
+`data-job-count`；0.3.0 的 `:scope > span` 因此选中了图标槽，数字压缩在 rc.2 上静默失效。
+0.3.1 改为优先锁定 `[data-job-count]`，旧版只有单个 span 时回退到 `> span`，所以 rc.2 和
+alpha.3 的标题都能压成数字。
 
 ## 做了什么（0.3.0）
 
@@ -183,9 +185,10 @@ chrome 避开刘海/小白条、把头栏压紧、在终端底部加按键条。
 
 0.3.1 在 **DSH 0.2.2-rc.2** 上的复验（Chromium，390×844 / 600×844）：
 
-- 带子智能体的会话：390 宽触发器 28×28，`.ZKlsPq_activitySlot` 15×15 显示 users 图标，
-  数字由官方容器查询隐藏；补丁前同一位置 `activitySlot` 为 `display:none`，触发器是空白；
-- 600 宽：官方阈值以上显示 users 图标 + “2 个子智能体”，标题不被挤掉；
+- 带子智能体的会话：390 宽、fine pointer 下触发器 28×28（触摸下通用 `min-height:36px`
+  把它撑到 28×36），`.ZKlsPq_activitySlot` 15×15 显示 users 图标，数字由官方容器查询隐藏；
+  补丁前同一位置 `activitySlot` 为 `display:none`，触发器是空白；
+- 600 宽：官方阈值以上显示 users 图标 + “2 个子智能体”，短标题会话下头栏无横向溢出；
 - 后台任务 `normalize` 对 rc.2（`activitySlot` + `span[data-job-count]`）和 alpha.3
   （单个 count span）两种 DOM 都把可见文本压成数字，关闭移动层后还原整句；
 - `node --check client.js index.js` 通过；`viewport-fit=cover`、`apple-mobile-web-app-capable`
