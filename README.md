@@ -10,7 +10,7 @@
 DSH Web 的**移动端细化层**。从 DSH 0.2.2-alpha.3 起，官方已经接管了手机端的抽屉导航；
 这层不再自绘抽屉，只补官方还没覆盖的部分：刘海/小白条安全区、触控尺寸、输入不缩放、
 头栏密度、终端按键条、长按排序。桌面浏览器不受影响——所有规则只挂在
-`html[data-dsh-mobile]`（视口宽度 ≤ 767px）上。
+`html[data-dsh-mobile]`（视口宽度 ≤ 767px）上。0.3.1 已在 DSH 0.2.2-rc.2 上重新核对。
 
 ## 界面预览
 
@@ -25,11 +25,25 @@ DSH Web 的**移动端细化层**。从 DSH 0.2.2-alpha.3 起，官方已经接�
 
 ## 适配策略：跟着官方走，只补缺口
 
-- **只追最新版**：按 DSH Web **0.2.2-alpha.3** 构建并验证；不再回头维护更老版本的行为。
+- **只追最新版**：按 DSH Web **0.2.2-rc.2** 构建并验证；不再回头维护更老版本的行为。
 - **官方修好一块，这里就删一块**：0.2.2-alpha.3 已经做了手机抽屉、frame 左上 opener、
   全局面板顶部内边距、触屏会话行操作、手机端模型目录、浮层贴合 visualViewport 等，
   本插件 0.3.0 删掉了自绘抽屉、头栏汉堡键和面板底栏，避免和官方抢同一块 DOM。
+  0.2.2-rc.2 又把子智能体 / 后台任务计数改成“图标包在 activitySlot 里 + 窄容器只留图标”，
+  本插件 0.3.1 随即删掉了隐藏计数器 span 的规则。
 - 每一条改动都能对应一个手机上真实存在的症状；没有症状的“更漂亮”不改。
+
+## 0.3.1：DSH 0.2.2-rc.2 适配
+
+rc.2 把子智能体计数器的图标从“触发器尾部的 chevron”改成了**图标包在
+`.ZKlsPq_activitySlot` span 里 + 数字包在 `.ZKlsPq_count` span 里**，并且用容器查询在
+窄容器（≤460px）只留图标。0.3.0 的 `.ZKlsPq_trigger > span { display: none }` 原本只想
+藏掉数字，结果把图标一起藏了：手机上这个 28px 触发器变成一块空白，看起来像“智能体团队
+的 icon 不见了”。0.3.1 不再碰这个触发器，紧凑形态完全交给官方。
+
+后台任务胶囊同理：rc.2 在图标外多了一层 `activitySlot` span，并把文字标成
+`data-job-count`。0.3.1 的数字改写改为优先锁定 `[data-job-count]`，旧版只有单个 span
+时再回退到 `> span`，所以 rc.2 和 alpha.3 的标题都能压成数字。
 
 ## 做了什么（0.3.0）
 
@@ -40,8 +54,9 @@ DSH Web 的**移动端细化层**。从 DSH 0.2.2-alpha.3 起，官方已经接�
   - 对话头栏、全局面板（插件 / 自动化）、设置面板、通用弹窗、Toast、右侧栏标签条与
     面板底部、轨迹详情浮层；
   - composer 底部留出 home indicator。
-- **头栏密度**：后台任务胶囊改成图标 + 数字（完整句子留在 `aria-label`），子代理计数只留图标，
-  动作标签截断而不是把标题挤没；手机上模型名尽量显示（隐藏版本号、放宽触发器宽度），
+- **头栏密度**：后台任务胶囊在宽一点的手机上压成图标 + 数字（完整句子留在 `aria-label`），
+  窄容器交给官方的只留图标模式；子智能体计数同样用官方紧凑模式（0.3.1 起本插件不再改它），
+  动作标签截断而不是把标题挤没；手机上模型名尽量显示（放宽触发器宽度），
   统计 pill 去装饰图标、收紧字号。
 - **手机输入**：触屏（`pointer: coarse`）下所有文本框最小 16px，避免 iOS 聚焦自动放大；
   键鼠窄窗口保留官方字号。
@@ -56,6 +71,11 @@ DSH Web 的**移动端细化层**。从 DSH 0.2.2-alpha.3 起，官方已经接�
   等键盘稳定后再滚进可见区域。
 
 ## 官方已经接管、这里不再做的
+
+0.2.2-rc.2 新增：
+
+- 子智能体计数 / 后台任务计数改用 `activitySlot` 包图标、`count` span 包数字，并用
+  容器查询在 ≤460px 只留图标；本插件不再隐藏这些 span，也不再自定义触发器的宽高。
 
 0.2.2-alpha.3 新增：
 
@@ -73,8 +93,8 @@ DSH Web 的**移动端细化层**。从 DSH 0.2.2-alpha.3 起，官方已经接�
 
 前提：DSH Web **0.2.2-alpha.3 或更新**。`package.json` 里已经用
 `engines.dsh: ">=0.2.2-alpha.3"` 声明了兼容范围：DSH 安装/启动时会按这个检查，低于该版本会
-明确提示不兼容，而不是静默加载后再出问题。更老的版本没有上面“官方接管”的抽屉与面板内边距，
-本插件也不代偿，不建议混用。
+明确提示不兼容，而不是静默加载后再出问题。0.3.1 在 **0.2.2-rc.2** 上逐项核对；更老的版本
+没有上面“官方接管”的抽屉与面板内边距，本插件也不代偿，不建议混用。
 
 **方式一：插件市场（推荐）**
 
@@ -133,17 +153,18 @@ chrome 避开刘海/小白条、把头栏压紧、在终端底部加按键条。
   `[data-global-panel]`、`[data-slot="conversation.header"]`、`[data-row-key]`、
   `[data-conversation-region="composer"]`、`[data-composer-seat]`、`[data-dockkit-strip]`、
   `[data-dockkit-tab-close]`、`[data-sidebar-right-session]`、`[data-dockkit-pane]`、
-  `[data-sidebar-terminal]`。
+  `[data-sidebar-terminal]`、`[data-subagent-count]`、`[data-job-count]`。
 - 少数必须用构建类名的补丁：设置面板 `.VOzbGW_panel`、模型触发器 `._7KE1Ra_trigger` /
-  `._7KE1Ra_triggerLabel`、统计 `.bOPqQW_pill`、输入区 `.uV2eYG_*`、子代理计数
-  `.ZKlsPq_trigger`、轨迹 `.Y0dWHa_*`、Toast `[class*="_toast_"]`。
-  这些在升级改名后会**静默失效**，其余补丁继续工作，不会把桌面或主界面弄坏。
-- 已核对：0.3.0 用到的构建类名在 DSH 0.2.2-alpha.3 上存在并生效；跨版本官方可能改名，
+  `._7KE1Ra_triggerLabel`、统计 `.bOPqQW_pill`、输入区 `.uV2eYG_*`、轨迹 `.Y0dWHa_*`、
+  Toast `[class*="_toast_"]`。这些在升级改名后会**静默失效**，其余补丁继续工作，
+  不会把桌面或主界面弄坏。子智能体计数的触发器不再使用构建类名：紧凑形态交给官方，
+  图标是否显示不再取决于本插件。
+- 已核对：0.3.1 用到的构建类名在 DSH 0.2.2-rc.2 上存在并生效；跨版本官方可能改名，
   改名后对应补丁静默失效，不会崩。0.2.0 起不再使用 `nth-child` 这类结构假设。
 
 ## 验证
 
-已用 Chromium 移动仿真（390×844、touch、iPhone 视口；CDP safe-area top 47 / bottom 34）逐项验证：
+0.3.0 的逐项验证（Chromium 移动仿真：390×844、touch、iPhone 视口；CDP safe-area top 47 / bottom 34）：
 
 - 官方 opener 唯一（本插件不再注入汉堡键），位置 12/58；头栏 padding 57/20/28、
   标题行 48px leading clearance；无横向溢出；
@@ -153,12 +174,24 @@ chrome 避开刘海/小白条、把头栏压紧、在终端底部加按键条。
 - 右侧栏全屏：标签条 padding-top 57、面板底部 34；终端按键条 7 键，底边 810（= 844 − 34）；
 - 轨迹 92% 浮层：padding 47/34；
 - 设置面板全屏 390×844、padding 47/34；通用弹窗容器 padding 47/34/16/16、max-height 763；
-- 后台任务胶囊：`aria-label` 保留整句，可见文本只有数字；
+- 后台任务胶囊：`aria-label` 保留整句，可见文本只有数字（0.3.1 起 ≤460px 由官方只留图标）；
 - 合成触摸：静止长按 450ms 触发 dragstart → dragend；150ms 内移动 20px 则完全不产生 drag 事件；
 - 700×390 + 左侧 47 安全区：opener 59/11、头栏左 47、clearance `calc(48px + 47px)`、
   抽屉左 47 且侧栏内容收缩不被裁切；
 - `?dsh-mobile=off`：不注入标记，头栏恢复官方 10/20、opener 回到 12/11（交由宿主自行避让）；
 - 1280×800 桌面：无 `data-dsh-mobile`，官方三栏（280 / 424 / 576），无按键条、无本插件相关报错。
+
+0.3.1 在 **DSH 0.2.2-rc.2** 上的复验（Chromium，390×844 / 600×844）：
+
+- 带子智能体的会话：390 宽触发器 28×28，`.ZKlsPq_activitySlot` 15×15 显示 users 图标，
+  数字由官方容器查询隐藏；补丁前同一位置 `activitySlot` 为 `display:none`，触发器是空白；
+- 600 宽：官方阈值以上显示 users 图标 + “2 个子智能体”，标题不被挤掉；
+- 后台任务 `normalize` 对 rc.2（`activitySlot` + `span[data-job-count]`）和 alpha.3
+  （单个 count span）两种 DOM 都把可见文本压成数字，关闭移动层后还原整句；
+- `node --check client.js index.js` 通过；`viewport-fit=cover`、`apple-mobile-web-app-capable`
+  和首帧 `data-dsh-mobile` 在 rc.2 页面仍然生效；
+- safe-area 数值本次未用 CDP 重跑（当前 Chromium 没有该协议方法），沿用 0.3.0 结果；
+  本次改动不涉及安全区规则。
 
 **还需要真机确认**：iOS 安全区实测数值、软键盘弹出/收起时序、Safari 对 `DataTransfer` 构造的
 支持（影响触摸拖拽排序）。
@@ -170,6 +203,8 @@ chrome 避开刘海/小白条、把头栏压紧、在终端底部加按键条。
 - 终端按键条依赖 xterm 的隐藏 textarea；xterm 大版本升级后可能需要重新核对。
 - 轨迹详情、设置面板的安全区补丁按构建类名 `.Y0dWHa_*.details` / `.VOzbGW_panel` 匹配；
   官方改名后只会少这层 padding，官方布局不变。
+- 子智能体 / 后台任务计数器的紧凑形态（≤460px 只留图标、以上显示数字）由官方容器查询决定；
+  本插件不再覆盖，官方改阈值时只会影响文字显隐，不会再把图标藏掉。
 - 长按排序依赖浏览器能构造 `DataTransfer`（旧版 Safari 可能不支持）；不支持时排序静默禁用，
   其余功能正常。
 

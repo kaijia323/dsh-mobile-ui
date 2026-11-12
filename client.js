@@ -1,11 +1,12 @@
 /**
  * Mobile patch layer for the Harness Web GUI (browser half).
  *
- * Targets DSH Web 0.2.2-alpha.3+. That release ships the phone navigation this
- * layer used to draw itself: the overlay drawer below 768px, its opener in the
- * frame leading seat, the mask, the Escape / Session / panel dismissal and the
- * global-panel top inset. The old custom drawer, header hamburger and panel
- * bottom bar are therefore gone — a second drawer only fought the shipped one.
+ * Targets DSH Web 0.2.2-alpha.3+, verified against 0.2.2-rc.2. 0.2.2-alpha.3
+ * already ships the phone navigation this layer used to draw itself: the
+ * overlay drawer below 768px, its opener in the frame leading seat, the mask,
+ * the Escape / Session / panel dismissal and the global-panel top inset. The
+ * old custom drawer, header hamburger and panel bottom bar are therefore gone —
+ * a second drawer only fought the shipped one.
  *
  * What remains are the gaps the shipped chrome still leaves:
  * - safe-area padding for the drawer, conversation header, global panels,
@@ -183,17 +184,10 @@ html[data-dsh-mobile] [data-composer-seat] .uV2eYG_dock {
   }
 }
 
-/* Header subagent counter: keep the icon, drop the label. */
-html[data-dsh-mobile] .ZKlsPq_trigger {
-  width: 28px !important;
-  padding: 0 !important;
-  gap: 0 !important;
-  justify-content: center !important;
-}
-
-html[data-dsh-mobile] .ZKlsPq_trigger > span {
-  display: none !important;
-}
+/* Header counters (subagents, background jobs) keep the shipped compact mode.
+   0.2.2-rc.2 wraps the glyph in an activitySlot <span> and hides the count
+   below a 460px container, so the icon and the label are no longer siblings
+   here. Hiding the trigger's spans (as 0.3.0 did) hides the glyph itself. */
 
 /* Header action labels truncate instead of widening the bar. */
 html[data-dsh-mobile] [data-slot="conversation.header"] button > span {
@@ -405,12 +399,15 @@ html[data-dsh-mobile] [data-dsh-mobile-keys] button[data-armed] {
 
         // ---- compact running-jobs pill ------------------------------------
         // The shipped pill label is a sentence ("2 个后台任务运行中") and, on a
-        // phone, it is the widest thing in the header row: it squeezes the
-        // Session title down to a single character. Keep the sentence in
-        // `aria-label` and rewrite only the visible text node to its count while
-        // the mobile shell is on, so the chip reads icon + number. React owns that
-        // text node, so it is edited in place and every header mutation
-        // re-normalizes it; turning the mobile shell off restores the sentence.
+        // phone above the shipped 460px container breakpoint, it is the widest
+        // thing in the header row: it squeezes the Session title down to a
+        // single character. Keep the sentence in `aria-label` and rewrite only
+        // the count span's text to its number while the mobile shell is on.
+        // 0.2.2-rc.2 moved the glyph into a leading `activitySlot` span and
+        // tagged the label `data-job-count`; older builds kept the label in the
+        // button's only direct span, which is the fallback. React owns the text
+        // node, so it is edited in place and every header mutation re-normalizes
+        // it; turning the mobile shell off restores the sentence.
         ctx.effect(() => {
           const root = document.documentElement;
           const TRIGGER =
@@ -418,10 +415,12 @@ html[data-dsh-mobile] [data-dsh-mobile-keys] button[data-armed] {
             '[data-slot="conversation.header"] button[aria-label*="background job"]';
 
           const normalize = (button, mobile) => {
-            const span = button.querySelector(':scope > span');
+            const count =
+              button.querySelector(':scope > [data-job-count]') ??
+              button.querySelector(':scope > span');
             const label = button.getAttribute('aria-label') || '';
-            if (span === null || label === '') return;
-            const text = span.firstChild;
+            if (count === null || label === '') return;
+            const text = count.firstChild;
             if (text === null || text.nodeType !== Node.TEXT_NODE) return;
             const match = label.match(/\d+/);
             const next = mobile && match !== null ? match[0] : label;
