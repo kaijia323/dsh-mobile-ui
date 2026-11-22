@@ -1,7 +1,7 @@
 /**
  * Mobile patch layer for the Harness Web GUI (browser half).
  *
- * Targets DSH Web 0.2.2-alpha.3+, verified against 0.2.2-rc.2. 0.2.2-alpha.3
+ * Targets DSH Web 0.2.2-alpha.3+, verified against 0.2.3-alpha.2. 0.2.2-alpha.3
  * already ships the phone navigation this layer used to draw itself: the
  * overlay drawer below 768px, its opener in the frame leading seat, the mask,
  * the Escape / Session / panel dismissal and the global-panel top inset. The
@@ -159,6 +159,23 @@ html[data-dsh-mobile] [data-composer-seat] .uV2eYG_dock {
     min-height: 36px;
   }
 
+  /* 0.2.3+ Session panel toggle: keep a comfortable square touch target. */
+  html[data-dsh-mobile] [data-slot="conversation.header"] button[data-session-panel-toggle] {
+    width: 36px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  html[data-dsh-mobile] [data-slot="conversation.header"] button[data-session-panel-toggle] [data-slot="conversation.session.panel.indicator"] > * {
+    top: 7px;
+    right: 7px;
+  }
+
+  /* 0.2.3+ Session panel: touch-sized row buttons inside the overlay. */
+  html[data-dsh-mobile] [data-session-panel] [data-session-panel-section] button {
+    min-height: 32px;
+  }
+
   html[data-dsh-mobile] [data-slot="conversation.header"] [data-open-target="directory"] {
     width: 24px !important;
     height: 24px !important;
@@ -224,6 +241,13 @@ html[data-dsh-mobile] [role="dialog"][aria-modal="true"]:not(.VOzbGW_panel) {
 html[data-dsh-mobile] [class*="_toast_"] {
   top: calc(40px + env(safe-area-inset-top)) !important;
   max-width: min(640px, calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right))) !important;
+}
+
+/* 0.2.3+ Session panel overlay: clear safe areas and use phone width comfortably. */
+html[data-dsh-mobile] [data-session-panel="overlay"] {
+  right: max(8px, env(safe-area-inset-right)) !important;
+  width: min(320px, calc(100vw - 16px - env(safe-area-inset-left) - env(safe-area-inset-right))) !important;
+  max-height: calc(var(--dsh-conversation-viewport-height, 100dvh) - var(--dsh-composer-height, 152px) - 24px - env(safe-area-inset-bottom)) !important;
 }
 
 /* Right panel: the full-screen strip clears the notch and the home indicator. */
@@ -429,6 +453,9 @@ html[data-dsh-mobile] [data-dsh-mobile-keys] button[data-armed] {
           };
 
           const normalizeHeader = (mobile) => {
+            // 0.2.3+ moved background jobs into the Session panel and replaced
+            // the wide header pill with an icon-only toggle + dot indicator.
+            if (document.querySelector('[data-session-panel-toggle]') !== null) return;
             for (const button of document.querySelectorAll(TRIGGER)) {
               normalize(button, mobile);
             }
